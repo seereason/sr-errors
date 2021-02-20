@@ -1,0 +1,20 @@
+Name:           sr-errors
+Version:        1.0.0
+License:        BSD3
+Author:         David Fox, Jeremy Shaw
+Category:       Unclassified
+Synopsis:       Error set types
+Description:    Error set types
+Maintainer:     David Fox <dsf@seereason.com>, Jeremy Shaw <jeremy@seereason.com>
+Homepage:       https://github.com/seereason/sr-errors
+Build-Type:     Simple
+Cabal-Version:  >= 1.10
+Tested-With: GHC==8.6.5
+
+Library
+  default-language: Haskell2010
+  GHC-Options: -Wall -Wredundant-constraints
+  Build-Depends:
+    base >= 4.9 && < 5, cereal, lens, safecopy, unexceptionalio-trans
+  Exposed-modules:
+    SeeReason.Errors
