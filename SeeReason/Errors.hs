@@ -45,6 +45,8 @@ module SeeReason.Errors
 
   , runNullExceptT
   , runNullExcept
+  , NonIOException(..)
+  , HasNonIOException(nonIOException)
   , liftUIO
   , runOneOf -- I think this is the best one
   , runOneOf'
