@@ -273,8 +273,16 @@ throwMembers (NoVal o) = throwMembers o
 #endif
 
 -- | Simplified catchMember where the monad doesn't change.
-tryMember :: forall e es m a. (Member e es, MonadError (OneOf es) m) => m a -> (e -> m a) -> m a
-tryMember ma f = tryError ma >>= either (\es -> maybe ma f (get es :: Maybe e)) return
+-- @@
+-- > runExceptT (tryMember @Char @String @'[Char, Int] (pure "ok") (\c -> pure ("Caught " <> show c)))
+-- Right "ok"
+-- > runExceptT (tryMember @Char @String @'[Char, Int] (throwMember 'x') (\c -> pure ("Caught " <> show c)))
+-- Right "Caught 'x'"
+-- > runExceptT (tryMember @Char @String @'[Char, Int] (throwMember (3 :: Int)) (\c -> pure ("Caught " <> show c)))
+-- Left 3
+-- @@
+tryMember :: forall e a es m. (Member e es, MonadError (OneOf es) m) => m a -> (e -> m a) -> m a
+tryMember ma f = tryError ma >>= either (\es -> maybe (throwError es) f (get es :: Maybe e)) return
 
 -- | Annotate a member error that has been thrown.
 mapMember :: forall e es m a. (Member e es, MonadError (OneOf es) m) => (e -> m e) -> m a -> m a
