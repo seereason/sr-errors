@@ -121,8 +121,11 @@ deriving instance Typeable k => Typeable (OneOf (n :: [k]))
 instance Show (OneOf '[]) where
   show Empty = "{}"
 
-instance (Show e, Show (OneOf s)) => Show (OneOf (e ': s)) where
-  show (Val e) = show e
+-- > runExcept (throwMember (1.5 :: Float) :: ExceptT (OneOf '[String, Float]) Identity ())
+-- Left (1.5 :: Float)
+
+instance (Show e, Typeable e, Show (OneOf s)) => Show (OneOf (e ': s)) where
+  show (Val e) = "(Val (" <> show e <> " :: " <> show (typeOf e) <> "))"
   show (NoVal o) = show o
   show Empty  = "{}"
 
