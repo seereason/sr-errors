@@ -36,6 +36,9 @@ module SeeReason.Errors
   , catchMember
   , liftExceptT
   , tryMember
+  , tryMember'
+  , dropMember
+  , dropMember'
   , mapMember
 
   , catchMember'
@@ -71,7 +74,7 @@ module SeeReason.Errors
 
 import Control.Exception (fromException, IOException, toException)
 import Control.Lens (Prism', preview, prism', review)
-import Control.Monad.Except (catchError, Except, ExceptT, lift, MonadError, runExcept, runExceptT, throwError, withExceptT)
+import Control.Monad.Except (ap, catchError, Except, ExceptT, lift, mapExceptT, MonadError, runExcept, runExceptT, throwError, withExceptT)
 import Data.Type.Bool
 --import Data.Type.Equality
 import Data.Word (Word8)
@@ -275,22 +278,46 @@ throwMembers (Val e) = throwError (review oneOf e :: OneOf es)
 throwMembers (NoVal o) = throwMembers o
 #endif
 
--- | Simplified catchMember where the monad doesn't change.
+-- | Simplified (and actually usable) 'catchMember' where the monad
+-- doesn't change.  The result will have the same error typed, but it
+-- can be assumed that the value of the error type is not @e@.  So you
+-- could then use dropMember to eliminate that error if you know
+-- enough about the error type.
 -- @@
--- > runExceptT (tryMember @Char @String @'[Char, Int] (pure "ok") (\c -> pure ("Caught " <> show c)))
+-- λ> runExceptT (tryMember @Char @'[Char, Int] (pure "ok"))
+-- Right (Right "ok")
+-- λ> runExceptT (tryMember @Char @'[Char, Int] (throwMember 'x'))
+-- Right (Left 'x')
+-- λ> runExceptT (tryMember @Char @'[Char, Int] (throwMember (3 :: Int)))
+-- Left (Val (3 :: Int))
+-- λ> :type dropMember @Char @Identity (tryMember @Char @'[Char, Int] (throwMember (3 :: Int)))
+-- ExceptT (OneOf '[Int]) Identity (Either Char a)
+-- @@
+tryMember :: forall e es m a. (MonadError (OneOf es) m, Member e es) => m a -> m (Either e a)
+tryMember ma = tryMember' (Right <$> ma) (pure . Left)
+
+-- λ> runExceptT (tryMember' @Char @String @'[Char, Int] (pure "ok") (\c -> pure ("Caught " <> show c)))
 -- Right "ok"
--- > runExceptT (tryMember @Char @String @'[Char, Int] (throwMember 'x') (\c -> pure ("Caught " <> show c)))
+-- λ> runExceptT (tryMember' @Char @String @'[Char, Int] (throwMember 'x') (\c -> pure ("Caught " <> show c)))
 -- Right "Caught 'x'"
--- > runExceptT (tryMember @Char @String @'[Char, Int] (throwMember (3 :: Int)) (\c -> pure ("Caught " <> show c)))
+-- λ> runExceptT (tryMember' @Char @String @'[Char, Int] (throwMember (3 :: Int)) (\c -> pure ("Caught " <> show c)))
 -- Left 3
--- @@
-tryMember :: forall e a es m. (Member e es, MonadError (OneOf es) m) => m a -> (e -> m a) -> m a
-tryMember ma f = tryError ma >>= either (\es -> maybe (throwError es) f (get es :: Maybe e)) return
+tryMember' :: forall e a es m. (Member e es, MonadError (OneOf es) m) => m a -> (e -> m a) -> m a
+tryMember' ma f = tryError ma >>= either (\es -> maybe (throwError es) f (get es :: Maybe e)) return
 
 -- | Annotate a member error that has been thrown.
 mapMember :: forall e es m a. (Member e es, MonadError (OneOf es) m) => (e -> m e) -> m a -> m a
 mapMember f ma =
   tryError ma >>= either (\es -> maybe (throwError es) (\e -> f e >>= throwMember) (get es :: Maybe e)) return
+
+-- | Discard the head error type from a OneOf error.
+dropMember :: forall e m es a. Monad m => ExceptT (OneOf (e : es)) m a -> ExceptT (OneOf es) m a
+dropMember ma = mapExceptT (ap (pure (either (Left . dropMember' @e) Right))) ma
+
+dropMember' :: OneOf (e ': es) -> OneOf es
+dropMember' Empty = Empty
+dropMember' (Val _) = Empty
+dropMember' (NoVal es) = es
 
 runNullExceptT :: Functor m => ExceptT (OneOf '[]) m a -> m a
 runNullExceptT m = (\(Right a) -> a) <$> runExceptT m
