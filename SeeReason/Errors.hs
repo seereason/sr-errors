@@ -33,15 +33,17 @@ module SeeReason.Errors
   , Member
   , throwMember
   , liftMember
-  , catchMember
   , liftExceptT
   , tryMember
-  , tryMember'
+  , catchMember
+  , tryMemberOld
+  , tryMemberOlder
   , dropMember
-  , dropMember'
+  -- , dropMember'
   , mapMember
 
-  , catchMember'
+  , catchMemberOld
+  -- , catchMember'
 #if 0
   , IsSubset
   , throwMembers
@@ -62,8 +64,8 @@ module SeeReason.Errors
   , liftUIO
 
   , runOneOf -- I think this is the best one
-  , runOneOf'
-  , runOneOf''
+  -- , runOneOf'
+  -- , runOneOf''
   , Errors
   , Errors'
   , test
@@ -227,15 +229,15 @@ liftExceptT action = liftMember =<< runExceptT action
 -- Typically this is used by forcing the action into ExceptT with
 -- the augmented error type:
 -- @@
---   catchMember withExceptT (fileIO @(FileError ': e) (Right <$> query st (LookValue key))) (return . Left)
+--   catchMemberOld withExceptT (fileIO @(FileError ': e) (Right <$> query st (LookValue key))) (return . Left)
 -- @@
-catchMember ::
+catchMemberOld ::
   forall esplus e es m n a.
   (Member e esplus, es ~ DeleteList e esplus,
    MonadError (OneOf esplus) m, MonadError (OneOf es) n)
   => (forall b. (OneOf esplus -> OneOf es) -> m b -> n b)
   -> m a -> (e -> n a) -> n a
-catchMember helper ma f =
+catchMemberOld helper ma f =
   -- The idea here is that we use tryError to bring a copy of e into
   -- the return value, then we can just delete e from error monad.
   helper (delete @e Proxy) (tryError ma) >>= either handle return
@@ -250,6 +252,7 @@ catchMember'' ::
 catchMember'' m = do
   lift (runExceptT m) >>= either (\es -> maybe (throwError (delete (Proxy @e) es :: OneOf es)) (pure . Left) (preview oneOf es)) (pure . Right)
 
+-- FFS I just rewrote this.
 catchMember' ::
   forall e (es :: [*]) m a.
   (MonadError (OneOf es) m)
@@ -278,6 +281,14 @@ throwMembers (Val e) = throwError (review oneOf e :: OneOf es)
 throwMembers (NoVal o) = throwMembers o
 #endif
 
+-- | Run an action in monad @ExceptT (OneOf (e ': es)) m@, where @m@ has error type @OneOf es@.
+-- This is essentially eliminating one of the error types from the action parameter.
+tryMember :: forall e es m a. (MonadError (OneOf es) m) => ExceptT (OneOf (e ': es)) m a -> m (Either e a)
+tryMember ma = either throwError pure =<< (runExceptT @(OneOf es) $ dropMember @e $ tryMemberOld @e ma)
+
+catchMember :: forall e es m a. (MonadError (OneOf es) m) => ExceptT (OneOf (e ': es)) m a -> (e -> m a) -> m a
+catchMember ma handler = either handler pure =<< tryMember @e ma
+
 -- | Simplified (and actually usable) 'catchMember' where the monad
 -- doesn't change.  The result will have the same error typed, but it
 -- can be assumed that the value of the error type is not @e@.  So you
@@ -293,8 +304,8 @@ throwMembers (NoVal o) = throwMembers o
 -- λ> :type dropMember @Char @Identity (tryMember @Char @'[Char, Int] (throwMember (3 :: Int)))
 -- ExceptT (OneOf '[Int]) Identity (Either Char a)
 -- @@
-tryMember :: forall e es m a. (MonadError (OneOf es) m, Member e es) => m a -> m (Either e a)
-tryMember ma = tryMember' (Right <$> ma) (pure . Left)
+tryMemberOld :: forall e es m a. (MonadError (OneOf es) m, Member e es) => m a -> m (Either e a)
+tryMemberOld ma = tryMemberOlder (Right <$> ma) (pure . Left)
 
 -- λ> runExceptT (tryMember' @Char @String @'[Char, Int] (pure "ok") (\c -> pure ("Caught " <> show c)))
 -- Right "ok"
@@ -302,8 +313,8 @@ tryMember ma = tryMember' (Right <$> ma) (pure . Left)
 -- Right "Caught 'x'"
 -- λ> runExceptT (tryMember' @Char @String @'[Char, Int] (throwMember (3 :: Int)) (\c -> pure ("Caught " <> show c)))
 -- Left 3
-tryMember' :: forall e a es m. (Member e es, MonadError (OneOf es) m) => m a -> (e -> m a) -> m a
-tryMember' ma f = tryError ma >>= either (\es -> maybe (throwError es) f (get es :: Maybe e)) return
+tryMemberOlder :: forall e a es m. (Member e es, MonadError (OneOf es) m) => m a -> (e -> m a) -> m a
+tryMemberOlder ma f = tryError ma >>= either (\es -> maybe (throwError es) f (get es :: Maybe e)) return
 
 -- | Annotate a member error that has been thrown.
 mapMember :: forall e es m a. (Member e es, MonadError (OneOf es) m) => (e -> m e) -> m a -> m a
@@ -347,7 +358,7 @@ runOneOf'' ::
   (es ~ DeleteList e esplus, Member e esplus, Monad m)
   => ExceptT (OneOf esplus) m a
   -> ExceptT (OneOf es) m (Either e a)
-runOneOf'' action = catchMember withExceptT (Right <$> action) (return . Left)
+runOneOf'' action = catchMemberOld withExceptT (Right <$> action) (return . Left)
 
 runOneOf' ::
   forall (esplus :: [*]) e (es :: [*]) m a r.
@@ -363,6 +374,7 @@ runOneOf ::
   => ExceptT (OneOf esplus) m a
   -> m (Either e a)
 runOneOf action = runOneOf' action return
+{-# DEPRECATED runOneOf "Use tryMember" #-}
 
 type Errors e = (Show (OneOf e), Typeable e, HasCallStack)
 type Errors' e = (Show (OneOf e), Typeable e)
