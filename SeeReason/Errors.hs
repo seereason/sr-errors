@@ -21,7 +21,10 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module SeeReason.Errors
-  ( IsMember
+  ( tryError
+  , mapError
+
+  , IsMember
   , Nub
   , OneOf(Empty, Val, NoVal)
   , Set(set)
@@ -100,6 +103,14 @@ type HasNonIOException e = HasNonIOException' String e
 -- | MonadError analog to the 'try' function.
 tryError :: MonadError e m => m a -> m (Either e a)
 tryError action = (Right <$> action) `catchError` (pure . Left)
+
+-- | MonadError analog of 'Control.Exception.handle'.
+handleError :: MonadError e m => (e -> m a) -> m a -> m a
+handleError = flip catchError
+
+-- | MonadError analogue of the 'mapExceptT' function.
+mapError :: (MonadError e m, MonadError e' n) => (m (Either e a) -> n (Either e' b)) -> m a -> n b
+mapError f action = f (tryError action) >>= liftEither
 
 type family IsMember x ys where
   IsMember x '[] = 'False
