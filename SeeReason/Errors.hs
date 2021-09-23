@@ -22,6 +22,7 @@
 
 module SeeReason.Errors
   ( tryError
+  , handleError
   , mapError
 
   , IsMember
@@ -78,8 +79,9 @@ module SeeReason.Errors
   ) where
 
 import Control.Exception (fromException, IOException, toException)
-import Control.Lens (Prism', preview, prism', review)
-import Control.Monad.Except (ap, catchError, Except, ExceptT, lift, mapExceptT, MonadError, runExcept, runExceptT, throwError, withExceptT)
+import Control.Lens (Prism', prism', review)
+import Control.Monad.Except (ap, catchError, Except, ExceptT, lift, liftEither, mapExceptT, MonadError,
+                             runExcept, runExceptT, throwError, withExceptT)
 import Data.Type.Bool
 --import Data.Type.Equality
 import Data.Word (Word8)
@@ -111,6 +113,12 @@ handleError = flip catchError
 -- | MonadError analogue of the 'mapExceptT' function.
 mapError :: (MonadError e m, MonadError e' n) => (m (Either e a) -> n (Either e' b)) -> m a -> n b
 mapError f action = f (tryError action) >>= liftEither
+
+#if 0
+-- Omitted to avoid dependency on sr-extra.
+decodeM' :: forall a e m. (MonadError (OneOf e) m, Member DecodeError e, Serialize a, Typeable a) => ByteString -> m a
+decodeM' bs = liftMember =<< tryError (decodeM bs)
+#endif
 
 type family IsMember x ys where
   IsMember x '[] = 'False
@@ -255,6 +263,7 @@ catchMemberOld helper ma f =
   where handle :: OneOf esplus -> n a
         handle es = maybe (throwError (delete @e Proxy es)) f (get es :: Maybe e)
 
+#if 0
 catchMember'' ::
   forall e (es :: [*]) m a.
   (Monad m)
@@ -272,6 +281,7 @@ catchMember' ::
   -> m a
 catchMember' action handle =
   either throwError (either handle pure) =<< runExceptT (catchMember'' @e action)
+#endif
 
 #if 0
 type family IsSubset xs ys where
