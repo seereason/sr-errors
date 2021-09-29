@@ -24,6 +24,7 @@ module SeeReason.Errors
   ( tryError
   , handleError
   , mapError
+  , traceOver
 
   , IsMember
   , Nub
@@ -89,6 +90,7 @@ import Data.SafeCopy
 import qualified Data.Serialize as S (Serialize(get, put), getWord8, Put, PutM, Get)
 import Data.Typeable (Typeable, typeOf)
 import Data.Proxy
+import Debug.Trace (trace)
 import GHC.Generics
 import GHC.Stack (HasCallStack)
 import UnexceptionalIO.Trans (fromIO, SomeNonPseudoException, Unexceptional)
@@ -113,6 +115,9 @@ handleError = flip catchError
 -- | MonadError analogue of the 'mapExceptT' function.
 mapError :: (MonadError e m, MonadError e' n) => (m (Either e a) -> n (Either e' b)) -> m a -> n b
 mapError f action = f (tryError action) >>= liftEither
+
+traceOver :: Show a => (String -> String) -> a -> a
+traceOver f a = trace (f (show a)) a
 
 #if 0
 -- Omitted to avoid dependency on sr-extra.
