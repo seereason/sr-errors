@@ -67,6 +67,7 @@ module SeeReason.Errors
   , NonIOException
   , HasNonIOException
   , liftUIO
+  , runExceptUIO
 
   , runOneOf -- I think this is the best one
   -- , runOneOf'
@@ -82,7 +83,7 @@ module SeeReason.Errors
 import Control.Exception (fromException, IOException, toException)
 import Control.Lens (Prism', prism', review)
 import Control.Monad.Except (ap, catchError, Except, ExceptT, lift, liftEither, mapExceptT, MonadError,
-                             runExcept, runExceptT, throwError, withExceptT)
+                             MonadIO, runExcept, runExceptT, throwError, withExceptT)
 import Data.Type.Bool
 --import Data.Type.Equality
 import Data.Word (Word8)
@@ -93,7 +94,7 @@ import Data.Proxy
 import Debug.Trace (trace)
 import GHC.Generics
 import GHC.Stack (HasCallStack)
-import UnexceptionalIO.Trans (fromIO, SomeNonPseudoException, Unexceptional)
+import UnexceptionalIO.Trans (fromIO, run, SomeNonPseudoException, UIO, Unexceptional)
 
 -- | If 'fromIO' throws a SomeNonPseudoException, 'splitException'
 -- decides whether it was an 'IOException' or something else, this
@@ -377,6 +378,11 @@ liftUIO ::
   => IO a
   -> m a
 liftUIO = liftUIO' show
+
+-- | Version of runExceptT that merges the error back into the result
+-- value rather than rethrowing it.
+runExceptUIO :: MonadIO m => (e -> a) -> ExceptT e UIO a -> m a
+runExceptUIO f io = either f id <$> run (runExceptT io)
 
 -- | Catch any FileError thrown and put it in the return value.
 runOneOf'' ::
