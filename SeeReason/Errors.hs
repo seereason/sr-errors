@@ -94,6 +94,7 @@ import Data.Proxy
 import Debug.Trace (trace)
 import GHC.Generics
 import GHC.Stack (HasCallStack)
+import GHC.TypeLits
 import UnexceptionalIO.Trans (fromIO, run, SomeNonPseudoException, UIO, Unexceptional)
 
 -- | If 'fromIO' throws a SomeNonPseudoException, 'splitException'
@@ -127,19 +128,23 @@ decodeM' bs = liftMember =<< tryError (decodeM bs)
 #endif
 
 type family IsMember x ys where
-  IsMember x '[] = 'False
-  IsMember x (x ': ys) = 'True
+  IsMember x '[] = 'Just ('Text "Not found: " :<>: 'ShowType x)
+  IsMember x (x ': ys) = 'Nothing
   IsMember x (y ': ys) = IsMember x ys
   IsMember x ys = IsMember x ys
+
+type family IsJust x where
+  IsJust ('Just x) = 'True
+  IsJust 'Nothing = 'False
 
 --type family Member x es where
 --  Member' x (OneOf xs) = Member' x xs
 
-type Member e es = (IsMember e es ~ 'True, Get e es, Set e es, Delete e es)
+type Member e es = (IsMember e es ~ 'Nothing, Get e es, Set e es, Delete e es)
 
 type family Nub xs where
   Nub '[] = '[]
-  Nub (x ': ys) = If (IsMember x ys) ys (x ': Nub ys)
+  Nub (x ': ys) = If (IsJust (IsMember x ys)) ys (x ': Nub ys)
 
 data OneOf (n :: [k]) where
   Empty :: OneOf s
@@ -201,7 +206,7 @@ class Set e xs where
 instance Set e (e ': xs) where
   set e = Val e
 
-instance {-# OVERLAPS #-} (IsMember e xs ~ 'True, Set e xs) => Set e (f ': xs) where
+instance {-# OVERLAPS #-} (IsMember e xs ~ 'Nothing, Set e xs) => Set e (f ': xs) where
   set e = NoVal (set e)
 
 class Get e xs where
@@ -212,7 +217,7 @@ instance {-# OVERLAPS #-} Get e (e ': xs) where
   get (NoVal _) = Nothing
   get Empty = error "impossible"
 
-instance (IsMember e xs ~ 'True, Get e xs) => Get e (f ': xs) where
+instance (IsMember e xs ~ 'Nothing, Get e xs) => Get e (f ': xs) where
   get (NoVal o) = get o
   get (Val _e) = Nothing
   get Empty = error "impossible"
