@@ -29,13 +29,10 @@ module SeeReason.Errors
   , IsMember
   , Nub
   , OneOf(Empty, Val, NoVal)
-  , Set(set)
-  , Get(get)
+  , Member(set, get, delete)
   , oneOf
   , DeleteList
   , DeleteOneOf
-  , Delete(delete)
-  , Member
   , throwMember
   , liftMember
   , liftExceptT
@@ -89,7 +86,7 @@ import Data.Type.Bool
 import Data.Word (Word8)
 import Data.SafeCopy
 import qualified Data.Serialize as S (Serialize(get, put), getWord8, Put, PutM, Get)
-import Data.Typeable (Typeable, typeOf, (:~:))
+import Data.Typeable (Typeable, typeOf)
 import Data.Proxy
 import Debug.Trace (trace)
 import Data.Type.Equality
@@ -133,7 +130,7 @@ data MemberTest
   | Found
 
 type family IsMember x ys where
-  IsMember x '[] = 'NotFound ('Text "Not found: " :<>: 'ShowType x)
+  IsMember x '[] = 'NotFound ('Text "Not found: " ':<>: 'ShowType x)
   IsMember x (x ': ys) = 'Found
   IsMember x (y ': ys) = IsMember x ys
   IsMember x ys = IsMember x ys
@@ -144,8 +141,6 @@ type family IsJust x where
 
 --type family Member x es where
 --  Member' x (OneOf xs) = Member' x xs
-
-type Member e es = (IsMember e es ~ 'Found, Get e es, Set e es, Delete e es)
 
 type family Nub xs where
   Nub '[] = '[]
@@ -160,6 +155,14 @@ deriving instance Typeable k => Typeable (OneOf (n :: [k]))
 
 instance Show (OneOf '[]) where
   show Empty = "{}"
+
+type family DeleteList e xs where
+  DeleteList x '[] = '[]
+  DeleteList x (x ': ys) = ys
+  DeleteList x (y ': ys) = (y ': (DeleteList x ys))
+
+type family DeleteOneOf e xs where
+  DeleteOneOf x (OneOf ys) = OneOf (DeleteList x ys)
 
 -- > runExcept (throwMember (1.5 :: Float) :: ExceptT (OneOf '[String, Float]) Identity ())
 -- Left (1.5 :: Float)
@@ -205,7 +208,34 @@ instance (SafeCopy e, S.Serialize e, Typeable e,  S.Serialize (OneOf s), Typeabl
   putCopy = contain . S.put
   errorTypeName = show . typeOf
 
-class Set e xs where
+#if 1
+class (IsMember e es ~ 'Found) => Member e es where
+  set :: e -> OneOf es
+  get :: OneOf es -> Maybe e
+  delete :: Proxy e -> OneOf es -> DeleteOneOf e (OneOf es)
+
+instance {-# OVERLAPS #-} Member e (e ': xs) where
+  set e = Val e
+  get (Val e) = Just e
+  get (NoVal _) = Nothing
+  get Empty = error "impossible"
+  delete _ (Val _e) = Empty
+  delete _ (NoVal o) = o
+  delete _ Empty = Empty
+
+instance {-# OVERLAPS #-} (IsMember e (f:xs) ~ 'Found, Member e xs, DeleteList e (f:xs) ~ (f : DeleteList e xs)) => Member e (f ': xs) where
+  set e = NoVal (set e)
+  get (NoVal o) = get o
+  get (Val _e) = Nothing
+  get Empty = error "impossible"
+  delete _p (Val v) = (Val v) -- :: OneOf (f ': (DeleteList e xs))
+  delete p (NoVal o) = NoVal (delete p o)
+  delete _p Empty = Empty
+
+#else
+type Member e es = (IsMember e es ~ 'Found, Get e es, Set e es, Delete e es)
+
+class (IsMember e es ~ 'Found) => Set e xs where
   set :: e -> OneOf xs
 
 instance Set e (e ': xs) where
@@ -227,17 +257,6 @@ instance (IsMember e xs ~ 'Found, Get e xs) => Get e (f ': xs) where
   get (Val _e) = Nothing
   get Empty = error "impossible"
 
-oneOf :: (Get e es, Set e es) => Prism' (OneOf es) e
-oneOf = prism' set get
-
-type family DeleteList e xs where
-  DeleteList x '[] = '[]
-  DeleteList x (x ': ys) = ys
-  DeleteList x (y ': ys) = (y ': (DeleteList x ys))
-
-type family DeleteOneOf e xs where
-  DeleteOneOf x (OneOf ys) = OneOf (DeleteList x ys)
-
 class Delete e xs where
   delete :: Proxy e -> OneOf xs -> DeleteOneOf e (OneOf xs)
 
@@ -250,6 +269,10 @@ instance {-# OVERLAPS #-} forall e f xs. (Delete e xs, DeleteList e (f:xs) ~ (f 
    delete _p (Val v) = (Val v) -- :: OneOf (f ': (DeleteList e xs))
    delete p (NoVal o) = NoVal (delete p o)
    delete _p Empty = Empty
+#endif
+
+oneOf :: (Member e es) => Prism' (OneOf es) e
+oneOf = prism' set get
 
 throwMember :: forall e es m a. (Member e es, MonadError (OneOf es) m) => e -> m a
 throwMember = throwError . review oneOf
@@ -279,7 +302,7 @@ catchMemberOld helper ma f =
   where handle :: OneOf esplus -> n a
         handle es = maybe (throwError (delete @e Proxy es)) f (get es :: Maybe e)
 
-#if 0
+{-
 catchMember'' ::
   forall e (es :: [*]) m a.
   (Monad m)
@@ -297,9 +320,9 @@ catchMember' ::
   -> m a
 catchMember' action handle =
   either throwError (either handle pure) =<< runExceptT (catchMember'' @e action)
-#endif
+-}
 
-#if 0
+{-
 type family IsSubset xs ys where
   IsSubset '[] _ = 'True
   IsSubset xs '[] = 'False
@@ -316,7 +339,7 @@ throwMembers :: forall e es' es m a. (IsSubset es' es ~ 'True, MonadError (OneOf
 throwMembers Empty = error "throwMembers"
 throwMembers (Val e) = throwError (review oneOf e :: OneOf es)
 throwMembers (NoVal o) = throwMembers o
-#endif
+-}
 
 -- | Run an action in monad @ExceptT (OneOf (e ': es)) m@, where @m@ has error type @OneOf es@.
 -- This is essentially eliminating one of the error types from the action parameter.
@@ -436,7 +459,7 @@ handleBar err =
        (Just Bar) -> putStrLn "took care of Bar"
      pure (delete @ErrorBar Proxy err)
 
-handleFoo :: ({-IsMember ErrorFoo errors ~ 'True,-} Get ErrorFoo errors, Delete ErrorFoo errors) => OneOf errors -> IO (DeleteOneOf ErrorFoo (OneOf errors))
+handleFoo :: Member ErrorFoo errors => OneOf errors -> IO (DeleteOneOf ErrorFoo (OneOf errors))
 handleFoo err =
   do case get err of
        Nothing -> putStrLn "no Bar error to handle"
