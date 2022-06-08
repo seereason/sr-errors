@@ -192,6 +192,21 @@ instance (S.Serialize e, S.Serialize (OneOf s)) => S.Serialize (OneOf (e ': s)) 
     1 -> Val <$> S.get
     _ -> error "impossible"
 
+instance (Ord (OneOf s)) => Eq (OneOf s) where
+  a == b = compare a b == EQ
+
+instance Ord (OneOf '[]) where
+  compare _ _ = EQ
+
+instance (Ord e, Ord (OneOf s)) => Ord (OneOf (e ': s)) where
+  compare Empty Empty = EQ
+  compare Empty _ = LT
+  compare _ Empty = GT
+  compare (Val e1) (Val e2) = compare e1 e2
+  compare (Val _) _ = LT
+  compare _ (Val _) = GT
+  compare (NoVal o1) (NoVal o2) = compare o1 o2 -- right?
+
 instance Typeable k => SafeCopy (OneOf ('[] :: [k])) where
   version = 1
   kind = base
