@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -81,6 +82,7 @@ import Control.Exception (fromException, IOException, toException)
 import Control.Lens (Prism', prism', review)
 import Control.Monad.Except (ap, catchError, Except, ExceptT, lift, liftEither, mapExceptT, MonadError,
                              MonadIO, runExcept, runExceptT, throwError, withExceptT)
+import Data.Data (Data)
 import Data.Type.Bool
 --import Data.Type.Equality
 import Data.Word (Word8)
@@ -98,7 +100,7 @@ import UnexceptionalIO.Trans (fromIO, run, SomeNonPseudoException, UIO, Unexcept
 -- | If 'fromIO' throws a SomeNonPseudoException, 'splitException'
 -- decides whether it was an 'IOException' or something else, this
 -- wrapper indicates it was something else.
-newtype NonIOException' a = NonIOException a {-SomeNonPseudoException-} deriving (Generic, Show, S.Serialize, Functor)
+newtype NonIOException' a = NonIOException a {-SomeNonPseudoException-} deriving (Eq, Ord, Generic, Data, Show, S.Serialize, Functor)
 type NonIOException = NonIOException' String
 class HasNonIOException' a e where nonIOException :: Prism' e (NonIOException' a)
 instance HasNonIOException' a (NonIOException' a) where nonIOException = id
