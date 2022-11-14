@@ -21,62 +21,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module SeeReason.Errors
-  ( tryError
-  , handleError
-  , mapError
-  , traceOver
-
-  , IsMember
-  , Nub
-  , OneOf(Empty, Val, NoVal)
-  , Member(set, get, delete)
-  , oneOf
-  , DeleteList
-  , DeleteOneOf
-  , throwMember
-  , liftMember
-  , liftExceptT
-  , tryMember
-  , catchMember
-  , tryMemberOld
-  , tryMemberOlder
-  , dropMember
-  -- , dropMember'
-  , mapMember
-
-  , catchMemberOld
-  -- , catchMember'
-#if 0
-  , IsSubset
-  , throwMembers
-  , liftMembers
-  , liftExceptTs
-#endif
-
-  , runNullExceptT
-  , runNullExcept
-
-  -- General cases, not sure if we will need these
-  , NonIOException'(..)
-  , HasNonIOException'(nonIOException)
-  , liftUIO'
-  -- String variants
-  , NonIOException
-  , HasNonIOException
-  , liftUIO
-  , runExceptUIO
-
-  , runOneOf -- I think this is the best one
-  -- , runOneOf'
-  -- , runOneOf''
-  , Errors
-  , Errors'
-  , test
-  , IOException
-  , module Control.Monad.Except
-  , module UnexceptionalIO.Trans
-  ) where
+module SeeReason.Errors where
 
 import Control.Exception (fromException, IOException, toException)
 import Control.Lens (Prism', prism', review)
