@@ -24,9 +24,10 @@
 module SeeReason.Errors where
 
 import Control.Exception (fromException, IOException, toException)
-import Control.Lens (Prism', prism', review)
-import Control.Monad.Except (ap, catchError, Except, ExceptT, lift, liftEither, mapExceptT, MonadError,
+import Control.Lens (preview, Prism', prism', review)
+import Control.Monad.Except (ap, catchError, Except, ExceptT, liftEither, mapExceptT, MonadError,
                              MonadIO, runExcept, runExceptT, throwError, withExceptT)
+import Data.Coerce (coerce, Coercible)
 import Data.Data (Data)
 import Data.Type.Bool
 --import Data.Type.Equality
@@ -302,6 +303,50 @@ throwMembers Empty = error "throwMembers"
 throwMembers (Val e) = throwError (review oneOf e :: OneOf es)
 throwMembers (NoVal o) = throwMembers o
 -}
+
+-- | @m@ and @m2@ are the same type, but only @m@ has the constraint
+-- @Member e es@.  This means code that calls 'tryMemberNew' will not
+-- have that constraint.
+tryMemberNew ::
+  forall e m2 m es es2 a.
+  (MonadError (OneOf es) m,
+   MonadError (OneOf es2) m2,
+   Member e es,
+   Coercible (OneOf es) (OneOf es2),
+   Coercible m m2,
+   HasCallStack)
+  => m a
+  -> m2 (Either e a)
+tryMemberNew ma =
+  m2 (either (Left . e2) Right <$> tryError ma) >>=
+    either (\(es :: OneOf es) -> case preview (oneOf :: Prism' (OneOf es) e) es of
+                                   Nothing -> throwError (coerce es :: OneOf es2)
+                                   Just e -> pure $ Left e)
+           (\a -> pure (Right a))
+  where
+    m2 :: m (Either (OneOf es) a) -> m2 (Either (OneOf es2) a)
+    m2 = coerce
+    e2 :: OneOf es -> OneOf es2
+    e2 = coerce
+{-# WARNING tryMemberNew "Experimental" #-}
+
+catchMemberNew ::
+  forall e m2 m es es2 a.
+  (Member e es,
+   MonadError (OneOf es) m,
+   MonadError (OneOf es2) m2,
+   Coercible m m2,
+   Coercible (OneOf es) (OneOf es2),
+   HasCallStack)
+  => m a
+  -> (e -> m a)
+  -> m2 a
+catchMemberNew ma handler =
+  either (\e -> m2 (handler e)) pure =<< tryMemberNew ma
+  where
+    m2 :: m a -> m2 a
+    m2 = coerce
+{-# WARNING catchMemberNew "Experimental" #-}
 
 -- | Run an action in monad @ExceptT (OneOf (e ': es)) m@, where @m@ has error type @OneOf es@.
 -- This is essentially eliminating one of the error types from the action parameter.
