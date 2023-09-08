@@ -19,28 +19,18 @@ module SeeReason.UIO {-# DEPRECATED "Retiring the unexceptional packages" #-}
   , liftUIO
   , liftUIO'
   , runExceptUIO
+  , splitException
+  , splitExceptT
   , module UnexceptionalIO.Trans
   ) where
 
 import SeeReason.Errors
 import Control.Exception (fromException, IOException, toException)
-import Control.Lens (preview, Prism', prism', review)
-import Control.Monad.Except (ap, catchError, Except, ExceptT, liftEither, mapExceptT, MonadError,
-                             MonadIO, runExcept, runExceptT, throwError, withExceptT)
-import Data.Coerce (coerce, Coercible)
+import Control.Lens (Prism', review)
+import Control.Monad.Except (ExceptT, MonadError, MonadIO, runExceptT, withExceptT)
 import Data.Data (Data)
-import Data.Type.Bool
---import Data.Type.Equality
-import Data.Word (Word8)
-import Data.SafeCopy
-import qualified Data.Serialize as S (Serialize(get, put), getWord8, Put, PutM, Get)
-import Data.Typeable (Typeable, typeOf)
-import Data.Proxy
-import Debug.Trace (trace)
-import Data.Type.Equality
+import qualified Data.Serialize as S (Serialize)
 import GHC.Generics
-import GHC.Stack (HasCallStack)
-import GHC.TypeLits
 import UnexceptionalIO.Trans -- (fromIO, run, SomeNonPseudoException, UIO, Unexceptional)
 
 -- | If 'fromIO' throws a SomeNonPseudoException, 'splitException'
@@ -61,9 +51,7 @@ liftUIO' ::
   -> IO a
   -> m a
 liftUIO' f io =
-  runExceptT (fromIO io) >>= either (either throwMember throwMember . splitException) return
-  where
-    splitException e = maybe (Left (NonIOException (f e))) Right (fromException (toException e) :: Maybe IOException)
+  runExceptT (fromIO io) >>= either (either throwMember throwMember . splitException f) return
 
 liftUIO ::
   (Unexceptional m, Member NonIOException e, Member IOException e, MonadError (OneOf e) m)
@@ -75,3 +63,22 @@ liftUIO = liftUIO' show
 -- value rather than rethrowing it.
 runExceptUIO :: MonadIO m => (e -> a) -> ExceptT e UIO a -> m a
 runExceptUIO f io = either f id <$> run (runExceptT io)
+
+-- splitException :: (Member NonIOException e, Member IOException e) => (SomeNonPseudoException -> s) -> IOException -> OneOf e
+splitException ::
+  forall a.
+     (SomeNonPseudoException -> a)
+  -> SomeNonPseudoException
+  -> Either (NonIOException' a) IOException
+splitException f e =
+  maybe
+    (Left (NonIOException (f e)))
+    Right
+    (fromException (toException e) :: Maybe IOException)
+
+splitExceptT ::
+  (Member IOException e, Member NonIOException e, Monad m)
+  => ExceptT SomeNonPseudoException m a
+  -> ExceptT (OneOf e) m a
+splitExceptT f =
+  withExceptT (either (review oneOf) (review oneOf) . splitException show) f
