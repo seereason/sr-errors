@@ -11,7 +11,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS -ddump-minimal-imports #-}
 
-module SeeReason.UIO {-# DEPRECATED "Retiring the unexceptional packages" #-}
+module SeeReason.UIO
   ( NonIOException
   , NonIOException'(NonIOException)
   , HasNonIOException'(nonIOException)
