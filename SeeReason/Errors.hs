@@ -27,8 +27,10 @@ module SeeReason.Errors
   , traceOver
   , liftExceptT
   , liftMember
+  , tryMemberOld2
   , tryMember
   , tryMemberNew
+  , catchMemberOld2
   , catchMember
   , catchMemberNew
   , throwMember
@@ -353,11 +355,25 @@ catchMemberNew ma handler =
 
 -- | Run an action in monad @ExceptT (OneOf (e ': es)) m@, where @m@ has error type @OneOf es@.
 -- This is essentially eliminating one of the error types from the action parameter.
-tryMember :: forall e es m a. (MonadError (OneOf es) m) => ExceptT (OneOf (e ': es)) m a -> m (Either e a)
-tryMember ma = either throwError pure =<< (runExceptT @(OneOf es) $ dropMember @e $ tryMemberOld @e ma)
+tryMemberOld2 :: forall e es m a. (MonadError (OneOf es) m) => ExceptT (OneOf (e ': es)) m a -> m (Either e a)
+tryMemberOld2 ma = either throwError pure =<< (runExceptT @(OneOf es) $ dropMember @e $ tryMemberOld @e ma)
 
-catchMember :: forall e es m a. (MonadError (OneOf es) m) => ExceptT (OneOf (e ': es)) m a -> (e -> m a) -> m a
-catchMember ma handler = either handler pure =<< tryMember @e ma
+catchMemberOld2 :: forall e es m a. (MonadError (OneOf es) m) => ExceptT (OneOf (e ': es)) m a -> (e -> m a) -> m a
+catchMemberOld2 ma handler = either handler pure =<< tryMemberOld2 @e ma
+
+catchMember ::
+  forall e (es :: [*]) m a. (MonadError (OneOf es) (m :: * -> *), Member e es)
+  => m a
+  -> (e -> m a)
+  -> m a
+catchMember action handle =
+  catchError action handleOneOf
+  where
+    handleOneOf :: OneOf es -> m a
+    handleOneOf es = maybe (throwError es) handle (get es)
+
+tryMember :: (MonadError (OneOf es) m, Member e es) => m a -> m (Either e a)
+tryMember action = (Right <$> action) `catchMember` (pure . Left)
 
 -- | Simplified (and actually usable) 'catchMember' where the monad
 -- doesn't change.  The result will have the same error typed, but it
