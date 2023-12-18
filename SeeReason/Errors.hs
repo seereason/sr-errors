@@ -372,7 +372,7 @@ catchMember action handle =
     handleOneOf :: OneOf es -> m a
     handleOneOf es = maybe (throwError es) handle (get es)
 
-tryMember :: (MonadError (OneOf es) m, Member e es) => m a -> m (Either e a)
+tryMember :: forall e es m a. (MonadError (OneOf es) m, Member e es) => m a -> m (Either e a)
 tryMember action = (Right <$> action) `catchMember` (pure . Left)
 
 -- | Simplified (and actually usable) 'catchMember' where the monad
