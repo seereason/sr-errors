@@ -38,7 +38,6 @@ module SeeReason.Errors
   , runOneOf
   , runNullExceptT
   , runNullExcept
-  , Errors
   , test
   ) where
 
@@ -445,9 +444,6 @@ runOneOf ::
   -> m (Either e a)
 runOneOf action = runOneOf' action return
 {-# DEPRECATED runOneOf "Use tryMember" #-}
-
-type Errors e = (Show (OneOf e), Typeable e, HasCallStack)
-type Errors' e = (Show (OneOf e), Typeable e)
 
 -- ** Example
 
