@@ -247,8 +247,13 @@ throwMember = throwError . review oneOf
 liftMember :: forall e es m a. (Member e es, MonadError (OneOf es) m) => Either e a -> m a
 liftMember = either throwMember return
 
+-- | Should be liftMemberT
 liftExceptT :: (Member e es, MonadError (OneOf es) m) => ExceptT e m a -> m a
-liftExceptT action = liftMember =<< runExceptT action
+liftExceptT = liftMemberT
+{-# DEPRECATED liftExceptT "Renamed liftMemberT" #-}
+
+liftMemberT :: (Member e es, MonadError (OneOf es) m) => ExceptT e m a -> m a
+liftMemberT action = liftMember =<< runExceptT action
 
 -- | Run an action with @e@ added to the current error set @es@.
 -- Typically this is used by forcing the action into ExceptT with

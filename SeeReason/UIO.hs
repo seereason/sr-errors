@@ -21,13 +21,14 @@ module SeeReason.UIO
   , runExceptUIO
   , splitException
   , splitExceptT
+  , fromExceptT
   , module UnexceptionalIO.Trans
   ) where
 
 import SeeReason.Errors
 import Control.Exception (fromException, IOException, toException)
 import Control.Lens (Prism', review)
-import Control.Monad.Except (ExceptT, MonadError, MonadIO, runExceptT, withExceptT)
+import Control.Monad.Except (ExceptT, MonadError, MonadIO, runExceptT, throwError, withExceptT)
 import Data.Data (Data)
 import qualified Data.Serialize as S (Serialize)
 import GHC.Generics
@@ -82,3 +83,11 @@ splitExceptT ::
   -> ExceptT (OneOf e) m a
 splitExceptT f =
   withExceptT (either (review oneOf) (review oneOf) . splitException show) f
+
+fromExceptT ::
+  (Unexceptional m, Member IOException e, Member NonIOException e)
+  => ExceptT (OneOf e) IO a
+  -> ExceptT (OneOf e) m a
+fromExceptT action =
+  either throwError (either throwError pure)
+    =<< (lift $ runExceptT $ splitExceptT $ fromIO $ runExceptT $ action)
