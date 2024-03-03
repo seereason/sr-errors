@@ -26,6 +26,7 @@ module SeeReason.Errors
   , mapError
   , traceOver
   , liftExceptT
+  , liftMemberT
   , liftMember
   , tryMemberOld2
   , tryMember
@@ -53,7 +54,7 @@ import Data.Typeable (Typeable, typeOf)
 import Data.Proxy
 import Debug.Trace (trace)
 import Data.Type.Equality
-import GHC.Stack (HasCallStack)
+import GHC.Stack (callStack, HasCallStack)
 import GHC.TypeLits
 
 -- | MonadError analog to the 'try' function.
@@ -337,6 +338,7 @@ tryMemberNew ma =
     m2 = coerce
     e2 :: OneOf es -> OneOf es2
     e2 = coerce
+    _ = callStack
 {-# WARNING tryMemberNew "Experimental" #-}
 
 catchMemberNew ::
