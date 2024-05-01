@@ -261,7 +261,7 @@ liftMemberT action = liftMember =<< runExceptT action
 
 -- | Look at a SomeException and see if it can be turned into a member error.
 class FindError es m where
-  findError :: MonadError es m => SomeException -> m a
+  findError :: HasCallStack => MonadError es m => SomeException -> m a
 
 -- | Helper function for building FindError instances:
 --     findError e =
