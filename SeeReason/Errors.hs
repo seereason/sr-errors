@@ -24,6 +24,8 @@ module SeeReason.Errors
   , tryError
   , handleError
   , mapError
+  , FindError(findError)
+  , throwJust
   , traceOver
   , liftExceptT
   , liftMemberT
@@ -42,6 +44,7 @@ module SeeReason.Errors
   , test
   ) where
 
+import Control.Exception (SomeException)
 import Control.Lens (preview, Prism', prism', review)
 import Control.Monad.Except (ap, catchError, Except, ExceptT, liftEither, mapExceptT, MonadError,
                              runExcept, runExceptT, throwError, withExceptT)
@@ -255,6 +258,18 @@ liftExceptT = liftMemberT
 
 liftMemberT :: (Member e es, MonadError (OneOf es) m) => ExceptT e m a -> m a
 liftMemberT action = liftMember =<< runExceptT action
+
+-- | Look at a SomeException and see if it can be turned into a member error.
+class FindError es m where
+  findError :: MonadError es m => SomeException -> m a
+
+-- | Helper function for building FindError instances:
+--     findError e =
+--       throwJust (fromException e :: Maybe ErrorCall) $
+--       throwJust (fromException e :: Maybe IOException) $
+--       throwM e
+throwJust :: (Member e es, MonadError (OneOf es) m) => Maybe e -> m a -> m a
+throwJust this next = maybe next throwMember this
 
 -- | Run an action with @e@ added to the current error set @es@.
 -- Typically this is used by forcing the action into ExceptT with
