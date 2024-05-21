@@ -259,15 +259,20 @@ liftExceptT = liftMemberT
 liftMemberT :: (Member e es, MonadError (OneOf es) m) => ExceptT e m a -> m a
 liftMemberT action = liftMember =<< runExceptT action
 
--- | Look at a SomeException and see if it can be turned into a member error.
+-- | Look at a SomeException and see if it can be turned into an error
+-- of type es.  This is being used in cases where es is a OneOf.
 class FindError es m where
-  findError :: HasCallStack => MonadError es m => SomeException -> m a
+  findError :: MonadError es m => (SomeException -> m a) -> SomeException -> m a
+
+-- | No members to find, just rethrow.
+instance FindError (OneOf '[]) h where
+  findError rethrow e = rethrow e
 
 -- | Helper function for building FindError instances:
---     findError e =
+--     findError rethrow e =
 --       throwJust (fromException e :: Maybe ErrorCall) $
 --       throwJust (fromException e :: Maybe IOException) $
---       throwM e
+--       rethrow e
 throwJust :: (Member e es, MonadError (OneOf es) m) => Maybe e -> m a -> m a
 throwJust this next = maybe next throwMember this
 
