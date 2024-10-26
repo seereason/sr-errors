@@ -9,6 +9,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -16,10 +17,10 @@
 
 module SeeReason.Errors.Types
   ( OneOf(Empty, Val, NoVal)
-  , DeleteList
-  , Set(set)
+  , Delete
+  , Put1(put1)
   , throwMember
-  , Get(get), Delete(delete)
+  , Get1(get1), Remove(remove)
   , Member
   , FindError(findError)
   , throwJust
@@ -42,11 +43,11 @@ data MemberTest
   = NotFound ErrorMessage
   | Found
 
-type family IsMember x ys where
-  IsMember x '[] = 'NotFound ('Text "Not found: " ':<>: 'ShowType x)
-  IsMember x (x ': ys) = 'Found
-  IsMember x (y ': ys) = IsMember x ys
-  IsMember x ys = IsMember x ys
+type family MemberP x ys where
+  MemberP x '[] = 'NotFound ('Text "Not found: " ':<>: 'ShowType x)
+  MemberP x (x ': ys) = 'Found
+  MemberP x (y ': ys) = MemberP x ys
+  MemberP x ys = MemberP x ys
 
 type family IsJust x where
   IsJust ('Just x) = 'True
@@ -54,7 +55,7 @@ type family IsJust x where
 
 type family Nub xs where
   Nub '[] = '[]
-  Nub (x ': ys) = If (IsMember x ys == 'Found) ys (x ': Nub ys)
+  Nub (x ': ys) = If (MemberP x ys == 'Found) ys (x ': Nub ys)
 
 data OneOf (n :: [k]) where
   Empty :: OneOf s
@@ -66,10 +67,10 @@ deriving instance Typeable k => Typeable (OneOf (n :: [k]))
 instance Show (OneOf '[]) where
   show Empty = "{}"
 
-type family DeleteList e xs where
-  DeleteList x '[] = '[]
-  DeleteList x (x ': ys) = ys
-  DeleteList x (y ': ys) = (y ': (DeleteList x ys))
+type family Delete e xs where
+  Delete x '[] = '[]
+  Delete x (x ': ys) = ys
+  Delete x (y ': ys) = (y ': (Delete x ys))
 
 -- > runExcept (throwMember (1.5 :: Float) :: ExceptT (OneOf '[String, Float]) Identity ())
 -- Left (1.5 :: Float)
@@ -130,86 +131,45 @@ instance (SafeCopy e, S.Serialize e, Typeable e,  S.Serialize (OneOf s), Typeabl
   putCopy = contain . S.put
   errorTypeName = show . typeOf
 
-class (IsMember e es ~ 'Found) => Set e es where
-  set :: e -> OneOf es
+class (MemberP e es ~ 'Found) => Put1 e es where
+  put1 :: e -> OneOf es
 
-instance {-# OVERLAPS #-} Set e (e ': xs) where
-  set e = Val e
+instance {-# OVERLAPS #-} Put1 e (e ': xs) where
+  put1 e = Val e
 
-instance {-# OVERLAPS #-} (IsMember e (f:xs) ~ 'Found, Set e xs, DeleteList e (f:xs) ~ (f : DeleteList e xs)) => Set e (f ': xs) where
-  set e = NoVal (set e)
+instance {-# OVERLAPS #-} (MemberP e (f:xs) ~ 'Found, Put1 e xs, Delete e (f:xs) ~ (f : Delete e xs)) => Put1 e (f ': xs) where
+  put1 e = NoVal (put1 e)
 
-throwMember :: forall e (es :: [*]) m a. (Set e es, MonadError (OneOf es) m) => e -> m a
-throwMember = throwError . set
+throwMember :: forall e (es :: [*]) m a. (Put1 e es, MonadError (OneOf es) m) => e -> m a
+throwMember = throwError . put1
 
-class (IsMember e es ~ 'Found) => Get e es where
-  get :: OneOf es -> Maybe e
+class (MemberP e es ~ 'Found) => Get1 e es where
+  get1 :: OneOf es -> Maybe e
 
-class (IsMember e es ~ 'Found) => Delete e es where
-  delete :: Proxy e -> OneOf es -> OneOf (DeleteList e es)
+class (MemberP e es ~ 'Found) => Remove e es where
+  remove :: Proxy e -> OneOf es -> OneOf (Delete e es)
 
-instance {-# OVERLAPS #-} Get e (e ': xs) where
-  -- set e = Val e
-  get (Val e) = Just e
-  get (NoVal _) = Nothing
-  get Empty = error "impossible"
+instance {-# OVERLAPS #-} Get1 e (e ': xs) where
+  get1 (Val e) = Just e
+  get1 (NoVal _) = Nothing
+  get1 Empty = error "impossible"
 
-instance {-# OVERLAPS #-} Delete e (e ': xs) where
-  delete _ (Val _e) = Empty
-  delete _ (NoVal o) = o
-  delete _ Empty = Empty
+instance {-# OVERLAPS #-} Remove e (e ': xs) where
+  remove _ (Val _e) = Empty
+  remove _ (NoVal o) = o
+  remove _ Empty = Empty
 
-instance {-# OVERLAPS #-} (IsMember e (f:xs) ~ 'Found, Get e xs, DeleteList e (f:xs) ~ (f : DeleteList e xs)) => Get e (f ': xs) where
-  -- set e = NoVal (set e)
-  get (NoVal o) = get o
-  get (Val _e) = Nothing
-  get Empty = error "impossible"
+instance {-# OVERLAPS #-} (MemberP e (f:xs) ~ 'Found, Get1 e xs, Delete e (f:xs) ~ (f : Delete e xs)) => Get1 e (f ': xs) where
+  get1 (NoVal o) = get1 o
+  get1 (Val _e) = Nothing
+  get1 Empty = error "impossible"
 
-instance {-# OVERLAPS #-} (IsMember e (f:xs) ~ 'Found, Delete e xs, DeleteList e (f:xs) ~ (f : DeleteList e xs)) => Delete e (f ': xs) where
-  delete _p (Val v) = (Val v) -- :: OneOf (f ': (DeleteList e xs))
-  delete p (NoVal o) = NoVal (delete p o)
-  delete _p Empty = Empty
+instance {-# OVERLAPS #-} (MemberP e (f:xs) ~ 'Found, Remove e xs, Delete e (f:xs) ~ (f : Delete e xs)) => Remove e (f ': xs) where
+  remove _p (Val v) = (Val v) -- :: OneOf (f ': (Delete e xs))
+  remove p (NoVal o) = NoVal (remove p o)
+  remove _p Empty = Empty
 
-{-
-type Member e es = (IsMember e es ~ 'Found, Get e es, Set e es, Delete e es)
-
-class (IsMember e es ~ 'Found) => Set e es where
-  set :: e -> OneOf xs
-
-instance Set e (e ': xs) where
-  set e = Val e
-
-instance {-# OVERLAPS #-} (IsMember e xs ~ 'Found, Set e xs) => Set e (f ': xs) where
-  set e = NoVal (set e)
-
-class Get e xs where
-  get :: OneOf xs -> Maybe e
-
-instance {-# OVERLAPS #-} Get e (e ': xs) where
-  get (Val e) = Just e
-  get (NoVal _) = Nothing
-  get Empty = error "impossible"
-
-instance (IsMember e xs ~ 'Found, Get e xs) => Get e (f ': xs) where
-  get (NoVal o) = get o
-  get (Val _e) = Nothing
-  get Empty = error "impossible"
-
-class Delete e xs where
-  delete :: Proxy e -> OneOf xs -> OneOf (DeleteList e xs)
-
-instance Delete e (e ': xs) where
-  delete _ (Val _e) = Empty
-  delete _ (NoVal o) = o
-  delete _ Empty = Empty
-
-instance {-# OVERLAPS #-} forall e f xs. (Delete e xs, DeleteList e (f:xs) ~ (f : DeleteList e xs)) => Delete e (f ': xs) where
-   delete _p (Val v) = (Val v) -- :: OneOf (f ': (DeleteList e xs))
-   delete p (NoVal o) = NoVal (delete p o)
-   delete _p Empty = Empty
--}
-
-type Member e es = (Set e es, Get e es, Delete e es)
+type Member e es = (Put1 e es, Get1 e es, Remove e es)
 
 -- | Look at a SomeException and see if it can be turned into an error
 -- of type es.  This is being used in cases where es is a OneOf.
@@ -225,7 +185,7 @@ instance FindError (OneOf '[]) h where
 --       throwJust (fromException e :: Maybe ErrorCall) $
 --       throwJust (fromException e :: Maybe IOException) $
 --       rethrow e
-throwJust :: (Set e es, MonadError (OneOf es) m) => Maybe e -> m a -> m a
+throwJust :: (Put1 e es, MonadError (OneOf es) m) => Maybe e -> m a -> m a
 throwJust this next = maybe next throwMember this
 
 -- | Convert between OneOf error types, assuming that the @OneOf es@
@@ -248,14 +208,14 @@ class MonadHandle es t where
   handleMember ::
     forall e t' a m. (MonadTrans t',
                       Monad m,
-                      Set e es, Get e es, Delete e es,
-                      ConvertErrors (DeleteList e es) es,
+                      Put1 e es, Get1 e es, Remove e es,
+                      ConvertErrors (Delete e es) es,
                       MonadError (OneOf es) (t m),
-                      MonadError (OneOf (DeleteList e es)) (t' m))
+                      MonadError (OneOf (Delete e es)) (t' m))
     => t m a -> t' m (Either e a)
 
 instance MonadHandle es (ExceptT (OneOf es)) where
   handleMember action =
     lift (runExceptT action) >>= \case
-      Left es -> maybe (throwError (convertErrors es)) (pure . Left) (get es)
+      Left es -> maybe (throwError (convertErrors es)) (pure . Left) (get1 es)
       Right a -> pure (Right a)
