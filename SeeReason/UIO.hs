@@ -25,7 +25,8 @@ module SeeReason.UIO
   , module UnexceptionalIO.Trans
   ) where
 
-import SeeReason.Errors
+import SeeReason.Errors.Handle (oneOf, throwMember)
+import SeeReason.Errors.Types (Member, OneOf)
 import Control.Exception (fromException, IOException, toException)
 import Control.Lens (Prism', review)
 import Control.Monad.Except (ExceptT, MonadError, MonadIO, runExceptT, throwError, withExceptT)
