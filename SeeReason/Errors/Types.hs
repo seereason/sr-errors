@@ -39,38 +39,43 @@ import Data.Proxy
 import Data.Type.Equality
 import GHC.TypeLits
 
+{-
 data MemberTest
   = NotFound ErrorMessage
   | Found
 
-type family MemberP x ys where
-  MemberP x '[] = 'NotFound ('Text "Not found: " ':<>: 'ShowType x)
-  MemberP x (x ': ys) = 'Found
-  MemberP x (y ': ys) = MemberP x ys
-  MemberP x ys = MemberP x ys
-
 type family IsJust x where
   IsJust ('Just x) = 'True
   IsJust 'Nothing = 'False
+-}
+
+type family MemberP x ys where
+  MemberP x '[] = 'False
+  MemberP x (x ': ys) = 'True
+  MemberP x (y ': ys) = MemberP x ys
+  MemberP x ys = MemberP x ys
 
 type family Nub xs where
   Nub '[] = '[]
-  Nub (x ': ys) = If (MemberP x ys == 'Found) ys (x ': Nub ys)
-
-data OneOf (n :: [k]) where
-  Empty :: OneOf s
-  Val   :: e -> OneOf (e ': s)
-  NoVal :: OneOf s -> OneOf (e ': s)
-
-deriving instance Typeable k => Typeable (OneOf (n :: [k]))
-
-instance Show (OneOf '[]) where
-  show Empty = "{}"
+  Nub (x ': ys) = If (MemberP x ys == 'True) ys (x ': Nub ys)
 
 type family Delete e xs where
   Delete x '[] = '[]
   Delete x (x ': ys) = ys
   Delete x (y ': ys) = (y ': (Delete x ys))
+
+-- * OneOf
+
+-- | Similar to a set, but can never have more than one element.
+data OneOf (n :: [k]) where
+  Empty :: OneOf s
+  Val   :: e -> OneOf (e ': s) -- ^ One element of type e
+  NoVal :: OneOf s -> OneOf (e ': s) -- ^ One element of some in s
+
+deriving instance Typeable k => Typeable (OneOf (n :: [k]))
+
+instance Show (OneOf '[]) where
+  show Empty = "{}"
 
 -- > runExcept (throwMember (1.5 :: Float) :: ExceptT (OneOf '[String, Float]) Identity ())
 -- Left (1.5 :: Float)
@@ -131,45 +136,55 @@ instance (SafeCopy e, S.Serialize e, Typeable e,  S.Serialize (OneOf s), Typeabl
   putCopy = contain . S.put
   errorTypeName = show . typeOf
 
-class (MemberP e es ~ 'Found) => Put1 e es where
+-- * Put1
+
+class (MemberP e es ~ 'True) => Put1 e es where
   put1 :: e -> OneOf es
 
 instance {-# OVERLAPS #-} Put1 e (e ': xs) where
   put1 e = Val e
 
-instance {-# OVERLAPS #-} (MemberP e (f:xs) ~ 'Found, Put1 e xs, Delete e (f:xs) ~ (f : Delete e xs)) => Put1 e (f ': xs) where
+instance {-# OVERLAPS #-} (MemberP e (f:xs) ~ 'True, Put1 e xs, Delete e (f:xs) ~ (f : Delete e xs)) => Put1 e (f ': xs) where
   put1 e = NoVal (put1 e)
 
 throwMember :: forall e (es :: [*]) m a. (Put1 e es, MonadError (OneOf es) m) => e -> m a
 throwMember = throwError . put1
 
-class (MemberP e es ~ 'Found) => Get1 e es where
-  get1 :: OneOf es -> Maybe e
+-- * Get1
 
-class (MemberP e es ~ 'Found) => Remove e es where
-  remove :: Proxy e -> OneOf es -> OneOf (Delete e es)
+class (MemberP e es ~ 'True) => Get1 e es where
+  get1 :: OneOf es -> Maybe e
 
 instance {-# OVERLAPS #-} Get1 e (e ': xs) where
   get1 (Val e) = Just e
   get1 (NoVal _) = Nothing
   get1 Empty = error "impossible"
 
+instance {-# OVERLAPS #-} (MemberP e (f:xs) ~ 'True, Get1 e xs, Delete e (f:xs) ~ (f : Delete e xs)) => Get1 e (f ': xs) where
+  get1 (NoVal o) = get1 o
+  get1 (Val _e) = Nothing
+  get1 Empty = error "impossible"
+
+-- * Remove
+
+class (MemberP e es ~ 'True) => Remove e es where
+  remove :: Proxy e -> OneOf es -> OneOf (Delete e es)
+
 instance {-# OVERLAPS #-} Remove e (e ': xs) where
   remove _ (Val _e) = Empty
   remove _ (NoVal o) = o
   remove _ Empty = Empty
 
-instance {-# OVERLAPS #-} (MemberP e (f:xs) ~ 'Found, Get1 e xs, Delete e (f:xs) ~ (f : Delete e xs)) => Get1 e (f ': xs) where
-  get1 (NoVal o) = get1 o
-  get1 (Val _e) = Nothing
-  get1 Empty = error "impossible"
-
-instance {-# OVERLAPS #-} (MemberP e (f:xs) ~ 'Found, Remove e xs, Delete e (f:xs) ~ (f : Delete e xs)) => Remove e (f ': xs) where
+instance {-# OVERLAPS #-} (MemberP e (f:xs) ~ 'True, Remove e xs, Delete e (f:xs) ~ (f : Delete e xs)) => Remove e (f ': xs) where
   remove _p (Val v) = (Val v) -- :: OneOf (f ': (Delete e xs))
   remove p (NoVal o) = NoVal (remove p o)
   remove _p Empty = Empty
 
+-- | This used to be a class rather than three separate classes, which
+-- gave better error messages.  Might be worth switching it back.
 type Member e es = (Put1 e es, Get1 e es, Remove e es)
+
+-- * FindError
 
 -- | Look at a SomeException and see if it can be turned into an error
 -- of type es.  This is being used in cases where es is a OneOf.
