@@ -42,13 +42,13 @@ import Data.Proxy
 import Debug.Trace (trace)
 import GHC.Stack (callStack, HasCallStack)
 import SeeReason.Errors.Handle (oneOf, throwMember, liftMemberT, tryError)
-import SeeReason.Errors.Types (Get(get), Set(set), Delete(delete), DeleteList, OneOf(Empty, Val, NoVal))
+import SeeReason.Errors.Types (Get1(get1), Put1(put1), Remove(remove), Delete, OneOf(Empty, Val, NoVal))
 
 traceOver :: Show a => (String -> String) -> a -> a
 traceOver f a = trace (f (show a)) a
 
 -- | Should be liftMemberT
-liftExceptT :: (Set e es, MonadError (OneOf es) m) => ExceptT e m a -> m a
+liftExceptT :: (Put1 e es, MonadError (OneOf es) m) => ExceptT e m a -> m a
 liftExceptT = liftMemberT
 {-# DEPRECATED liftExceptT "Renamed liftMemberT" #-}
 
@@ -60,16 +60,16 @@ liftExceptT = liftMemberT
 -- @@
 catchMemberOld ::
   forall esplus e es m n a.
-  (Get e esplus, Delete e esplus, es ~ DeleteList e esplus,
+  (Get1 e esplus, Remove e esplus, es ~ Delete e esplus,
    MonadError (OneOf esplus) m, MonadError (OneOf es) n)
   => (forall b. (OneOf esplus -> OneOf es) -> m b -> n b)
   -> m a -> (e -> n a) -> n a
 catchMemberOld helper ma f =
   -- The idea here is that we use tryError to bring a copy of e into
   -- the return value, then we can just delete e from error monad.
-  helper (delete @e Proxy) (tryError ma) >>= either handle return
+  helper (remove @e Proxy) (tryError ma) >>= either handle return
   where handle :: OneOf esplus -> n a
-        handle es = maybe (throwError (delete @e Proxy es)) f (get es :: Maybe e)
+        handle es = maybe (throwError (remove @e Proxy es)) f (get1 es :: Maybe e)
 
 {-
 catchMember'' ::
@@ -117,7 +117,7 @@ tryMemberNew ::
   forall e m2 m es es2 a.
   (MonadError (OneOf es) m,
    MonadError (OneOf es2) m2,
-   Set e es, Get e es,
+   Put1 e es, Get1 e es,
    Coercible (OneOf es) (OneOf es2),
    Coercible m m2,
    HasCallStack)
@@ -139,7 +139,7 @@ tryMemberNew ma =
 
 catchMemberNew ::
   forall e m2 m es es2 a.
-  (Set e es, Get e es,
+  (Put1 e es, Get1 e es,
    MonadError (OneOf es) m,
    MonadError (OneOf es2) m2,
    Coercible m m2,
@@ -178,7 +178,7 @@ catchMemberOld2 ma handler = either handler pure =<< tryMemberOld2 @e ma
 -- λ> :type dropMember @Char @Identity (tryMember @Char @'[Char, Int] (throwMember (3 :: Int)))
 -- ExceptT (OneOf '[Int]) Identity (Either Char a)
 -- @@
-tryMemberOld :: forall e es m a. (MonadError (OneOf es) m, Get e es) => m a -> m (Either e a)
+tryMemberOld :: forall e es m a. (MonadError (OneOf es) m, Get1 e es) => m a -> m (Either e a)
 tryMemberOld ma = tryMemberOlder (Right <$> ma) (pure . Left)
 
 -- λ> runExceptT (tryMember' @Char @String @'[Char, Int] (pure "ok") (\c -> pure ("Caught " <> show c)))
@@ -187,13 +187,13 @@ tryMemberOld ma = tryMemberOlder (Right <$> ma) (pure . Left)
 -- Right "Caught 'x'"
 -- λ> runExceptT (tryMember' @Char @String @'[Char, Int] (throwMember (3 :: Int)) (\c -> pure ("Caught " <> show c)))
 -- Left 3
-tryMemberOlder :: forall e a es m. (Get e es, MonadError (OneOf es) m) => m a -> (e -> m a) -> m a
-tryMemberOlder ma f = tryError ma >>= either (\es -> maybe (throwError es) f (get es :: Maybe e)) return
+tryMemberOlder :: forall e a es m. (Get1 e es, MonadError (OneOf es) m) => m a -> (e -> m a) -> m a
+tryMemberOlder ma f = tryError ma >>= either (\es -> maybe (throwError es) f (get1 es :: Maybe e)) return
 
 -- | Annotate a member error that has been thrown.
-mapMember :: forall e es m a. (Set e es, Get e es, MonadError (OneOf es) m) => (e -> m e) -> m a -> m a
+mapMember :: forall e es m a. (Put1 e es, Get1 e es, MonadError (OneOf es) m) => (e -> m e) -> m a -> m a
 mapMember f ma =
-  tryError ma >>= either (\es -> maybe (throwError es) (\e -> f e >>= throwMember) (get es :: Maybe e)) return
+  tryError ma >>= either (\es -> maybe (throwError es) (\e -> f e >>= throwMember) (get1 es :: Maybe e)) return
 
 -- | Discard the head error type from a OneOf error.
 dropMember :: forall e m es a. Monad m => ExceptT (OneOf (e : es)) m a -> ExceptT (OneOf es) m a
@@ -213,14 +213,14 @@ runNullExcept m = (\(Right a) -> a) (runExcept m)
 -- | Catch any FileError thrown and put it in the return value.
 runOneOf'' ::
   forall (esplus :: [*]) e (es :: [*]) m a.
-  (es ~ DeleteList e esplus, Get e esplus, Delete e esplus, Monad m)
+  (es ~ Delete e esplus, Get1 e esplus, Remove e esplus, Monad m)
   => ExceptT (OneOf esplus) m a
   -> ExceptT (OneOf es) m (Either e a)
 runOneOf'' action = catchMemberOld withExceptT (Right <$> action) (return . Left)
 
 runOneOf' ::
   forall (esplus :: [*]) e (es :: [*]) m a r.
-  (es ~ DeleteList e esplus, Get e esplus, Delete e esplus, MonadError (OneOf es) m)
+  (es ~ Delete e esplus, Get1 e esplus, Remove e esplus, MonadError (OneOf es) m)
   => ExceptT (OneOf esplus) m a
   -> (Either e a -> m r)
   -> m r
@@ -228,7 +228,7 @@ runOneOf' action final = runExceptT (runOneOf'' action) >>= either throwError fi
 
 runOneOf ::
   forall (esplus :: [*]) e (es :: [*]) m a.
-  (es ~ DeleteList e esplus, Get e esplus, Delete e esplus, MonadError (OneOf es) m)
+  (es ~ Delete e esplus, Get1 e esplus, Remove e esplus, MonadError (OneOf es) m)
   => ExceptT (OneOf esplus) m a
   -> m (Either e a)
 runOneOf action = runOneOf' action return
@@ -257,19 +257,19 @@ data ErrorBaz = Baz deriving Show
 
 type AppErrors = OneOf '[ErrorFoo, ErrorBar, ErrorBaz]
 
-handleBar :: (Get ErrorBar errors, Delete ErrorBar errors) => OneOf errors -> IO (OneOf (DeleteList ErrorBar errors))
+handleBar :: (Get1 ErrorBar errors, Remove ErrorBar errors) => OneOf errors -> IO (OneOf (Delete ErrorBar errors))
 handleBar err =
-  do case get err of
+  do case get1 err of
        Nothing -> putStrLn "no Bar error to handle"
        (Just Bar) -> putStrLn "took care of Bar"
-     pure (delete @ErrorBar Proxy err)
+     pure (remove @ErrorBar Proxy err)
 
-handleFoo :: (Get ErrorFoo errors, Delete ErrorFoo errors) => OneOf errors -> IO (OneOf (DeleteList ErrorFoo errors))
+handleFoo :: (Get1 ErrorFoo errors, Remove ErrorFoo errors) => OneOf errors -> IO (OneOf (Delete ErrorFoo errors))
 handleFoo err =
-  do case get err of
+  do case get1 err of
        Nothing -> putStrLn "no Bar error to handle"
        (Just Foo) -> putStrLn "took care of Bar"
-     pure (delete @ErrorFoo Proxy err)
+     pure (remove @ErrorFoo Proxy err)
 
 {-
 Generates the ouput:
@@ -282,7 +282,7 @@ current error = {}
 -}
 test :: IO ()
 test =
-  do let errAll = set Foo :: AppErrors
+  do let errAll = put1 Foo :: AppErrors
      putStrLn $ "current error = " ++ show errAll
 
      errNoBar <- handleBar errAll

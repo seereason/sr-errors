@@ -30,14 +30,15 @@ module SeeReason.Errors.Types
 
 import Control.Exception (SomeException)
 import Control.Monad.Except (ExceptT, lift, MonadError, MonadTrans,  runExceptT, throwError)
-import Data.Type.Bool
+--import Data.Type.Bool
 import Data.Word (Word8)
 import Data.SafeCopy
 import qualified Data.Serialize as S (Serialize(get, put), getWord8, Put, PutM, Get)
 import Data.Typeable (Typeable, typeOf)
 import Data.Proxy
-import Data.Type.Equality
-import GHC.TypeLits
+--import Data.Type.Equality
+--import GHC.TypeLits
+--import SeeReason.Errors.Sort
 
 {-
 data MemberTest
@@ -55,9 +56,11 @@ type family MemberP x ys where
   MemberP x (y ': ys) = MemberP x ys
   MemberP x ys = MemberP x ys
 
+{-
 type family Nub xs where
   Nub '[] = '[]
   Nub (x ': ys) = If (MemberP x ys == 'True) ys (x ': Nub ys)
+-}
 
 type family Delete e xs where
   Delete x '[] = '[]

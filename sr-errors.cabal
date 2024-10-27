@@ -1,5 +1,5 @@
 Name:           sr-errors
-Version:        1.12
+Version:        1.13
 License:        BSD3
 Author:         David Fox, Jeremy Shaw
 Category:       Unclassified
@@ -19,6 +19,7 @@ Library
   Exposed-modules:
     SeeReason.Errors,
     SeeReason.Errors.Handle,
+    SeeReason.Errors.Sort,
     SeeReason.Errors.Types,
     SeeReason.Errors.Old,
     SeeReason.UIO
