@@ -20,6 +20,7 @@ module SeeReason.Errors.Sort
   , MemberTest(NotFound, Found)
   , MemberP
   , Delete
+  , Insert
   , Intersection
   , Difference
   ) where
