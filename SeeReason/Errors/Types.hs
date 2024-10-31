@@ -54,7 +54,7 @@ type family MemberP x ys where
   MemberP x '[] = 'NotFound ('Text "Member " ':<>: 'ShowType x ':<>: 'Text " not found in " ':<>: 'Text "ShowType ys")
   MemberP x (x ': ys) = 'Found
   MemberP x (y ': ys) = MemberP x ys
-  MemberP x ys = MemberP x ys
+  -- MemberP x ys = MemberP x ys
 
 {-
 type family Nub xs where
