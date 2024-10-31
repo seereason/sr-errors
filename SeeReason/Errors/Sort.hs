@@ -12,7 +12,17 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module SeeReason.Errors.Sort (Nub, Sort, TypeId, AsSet) where
+module SeeReason.Errors.Sort
+  ( Nub
+  , Sort
+  , TypeId
+  , AsSet
+  , MemberTest(NotFound, Found)
+  , MemberP
+  , Delete
+  , Intersection
+  , Difference
+  ) where
 
 import GHC.TypeLits
 -- import Data.Proxy (Proxy(Proxy))
@@ -71,6 +81,44 @@ type family DeleteFromList (e :: elem) (list :: [elem]) where
                                        (x ': DeleteFromList elem xs)
 
 type AsSet s = Nub (Sort s)
+
+type Union s t = AsSet (s :++ t)
+
+type family Insert a s where
+  Insert x xs = Union '[x] xs
+
+data MemberTest
+  = NotFound ErrorMessage
+  | Found
+
+{-
+type family IsJust x where
+  IsJust ('Just x) = 'True
+  IsJust 'Nothing = 'False
+-}
+
+type family MemberP x ys where
+  MemberP x '[] = 'NotFound ('Text "Member " ':<>: 'ShowType x ':<>: 'Text " not found in " ':<>: 'Text "ShowType ys")
+  MemberP x (x ': ys) = 'Found
+  MemberP x (y ': ys) = MemberP x ys
+  -- MemberP x ys = MemberP x ys
+
+type family Delete e xs where
+  Delete x '[] = '[]
+  Delete x (x ': ys) = ys -- Assuming AsSet was applied
+  Delete x (y ': ys) = (y ': (Delete x ys))
+
+type family Intersection a b where
+  Intersection '[] s = '[]
+  Intersection s '[] = '[]
+  Intersection (x ': xs) ys =
+    Union (If (MemberP x ys == 'Found) '[x] '[]) (Intersection xs (Delete x ys))
+
+type family Difference a b where
+  Difference a '[] = a
+  Difference '[] a = '[]
+  Difference (x ': xs) ys =
+    Union (If (MemberP x ys == 'Found) '[] '[x]) (Difference xs ys)
 
 {-
 type family Delete elem set where

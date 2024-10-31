@@ -39,33 +39,13 @@ import Data.Proxy
 import Data.Type.Equality
 import GHC.TypeLits
 import SeeReason.Errors.Sort
-
-data MemberTest
-  = NotFound ErrorMessage
-  | Found
-
-{-
-type family IsJust x where
-  IsJust ('Just x) = 'True
-  IsJust 'Nothing = 'False
--}
-
-type family MemberP x ys where
-  MemberP x '[] = 'NotFound ('Text "Member " ':<>: 'ShowType x ':<>: 'Text " not found in " ':<>: 'Text "ShowType ys")
-  MemberP x (x ': ys) = 'Found
-  MemberP x (y ': ys) = MemberP x ys
-  -- MemberP x ys = MemberP x ys
+  (AsSet, Delete, MemberTest(Found, NotFound), MemberP)
 
 {-
 type family Nub xs where
   Nub '[] = '[]
   Nub (x ': ys) = If (MemberP x ys == 'Found) ys (x ': Nub ys)
 -}
-
-type family Delete e xs where
-  Delete x '[] = '[]
-  Delete x (x ': ys) = ys -- Assuming AsSet was applied
-  Delete x (y ': ys) = (y ': (Delete x ys))
 
 -- * OneOf
 
