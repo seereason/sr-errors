@@ -64,7 +64,7 @@ type family Nub xs where
 
 type family Delete e xs where
   Delete x '[] = '[]
-  Delete x (x ': ys) = ys
+  Delete x (x ': ys) = ys -- Assuming AsSet was applied
   Delete x (y ': ys) = (y ': (Delete x ys))
 
 -- * OneOf
