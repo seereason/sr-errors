@@ -36,10 +36,8 @@ import Data.SafeCopy
 import qualified Data.Serialize as S (Serialize(get, put), getWord8, Put, PutM, Get)
 import Data.Typeable (Typeable, typeOf)
 import Data.Proxy
-import Data.Type.Equality
-import GHC.TypeLits
 import SeeReason.Errors.Sort
-  (AsSet, Delete, MemberTest(Found, NotFound), MemberP)
+  (Delete, MemberTest(Found), MemberP)
 
 {-
 type family Nub xs where
