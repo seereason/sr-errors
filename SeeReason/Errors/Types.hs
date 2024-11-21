@@ -188,11 +188,11 @@ throwJust this next = maybe next throwMember this
 -- contains.  It should be possible to write this for any error types,
 -- but I haven't managed it.  Therefore I write custom instances as
 -- needed.
-class ConvertErrors es es' where
-  convertErrors :: OneOf es' -> OneOf es
+class ConvertErrors old new where
+  convertErrors :: OneOf old -> OneOf new
 
 -- | Simple case
-instance ConvertErrors '[] es' where
+instance ConvertErrors es' '[] where
   convertErrors _ = Empty
 
 instance ConvertErrors es es where
@@ -204,7 +204,7 @@ class MonadHandle es t where
     forall e t' a m. (MonadTrans t',
                       Monad m,
                       Put1 e es, Get1 e es, Remove e es,
-                      ConvertErrors (Delete e es) es,
+                      ConvertErrors es (Delete e es),
                       MonadError (OneOf es) (t m),
                       MonadError (OneOf (Delete e es)) (t' m))
     => t m a -> t' m (Either e a)

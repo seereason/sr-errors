@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
@@ -18,24 +17,11 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module SeeReason.Errors.Old
-  ( traceOver
-  , liftExceptT
-  , tryMemberOld2
-  , tryMemberNew
-  , catchMemberOld2
-  , catchMemberNew
-  , throwMember
-  , mapMember
-  , runOneOf
-  , runNullExceptT
-  , runNullExcept
-  , test
-  ) where
+module SeeReason.Errors.Old {-# DEPRECATED "Inline all" #-} where
 
 import Control.Lens (preview, Prism')
 import Control.Monad.Except
-  (ap, Except, ExceptT, mapExceptT, MonadError,
+  (ap, Except, ExceptT, liftEither, mapExceptT, MonadError,
    runExcept, runExceptT, throwError, withExceptT)
 import Data.Coerce (coerce, Coercible)
 import Data.Proxy
@@ -44,8 +30,21 @@ import GHC.Stack (callStack, HasCallStack)
 import SeeReason.Errors.Handle (oneOf, throwMember, liftMemberT, tryError)
 import SeeReason.Errors.Types (Get1(get1), Put1(put1), Remove(remove), Delete, OneOf(Empty, Val, NoVal))
 
+-- | Absorb an ExceptT e' action into another MonadError instance.
+withError :: MonadError e m => (e' -> e) -> ExceptT e' m a -> m a
+withError f action = runExceptT (withExceptT f action) >>= liftEither
+
+-- | Modify the value (but not the type) of an error
+withError' :: MonadError e m => (e -> e) -> m a -> m a
+withError' f action = tryError action >>= either (throwError . f) return
+{-# DEPRECATED withError' "withError might to be able to do this job" #-}
+
 traceOver :: Show a => (String -> String) -> a -> a
-traceOver f a = trace (f (show a)) a
+traceOver f a = traceWith (f . show) a
+
+-- Added to base-4.18
+traceWith :: (a -> String) -> a -> a
+traceWith f a = trace (f a) a
 
 -- | Should be liftMemberT
 liftExceptT :: (Put1 e es, MonadError (OneOf es) m) => ExceptT e m a -> m a

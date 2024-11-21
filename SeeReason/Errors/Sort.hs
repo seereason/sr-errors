@@ -1,3 +1,5 @@
+-- Work in progress?
+
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -42,6 +44,7 @@ type family Nub xs where
   Nub (x ': y ': ys) = x ': Nub (y ': ys)
 
 -- | List append (essentially set disjoint union)
+infixr 5 :++
 type family (:++) (x :: [k]) (y :: [k]) :: [k] where
             '[]       :++ xs = xs
             (x ': xs) :++ ys = x ': (xs :++ ys)
