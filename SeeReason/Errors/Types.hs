@@ -25,6 +25,7 @@ module SeeReason.Errors.Types
   , FindError(findError)
   , throwJust
   , ConvertErrors(convertErrors)
+  , liftMembers
   , MonadHandle(handleMember)
   ) where
 
@@ -197,6 +198,14 @@ instance ConvertErrors es' '[] where
 
 instance ConvertErrors es es where
   convertErrors es = es
+
+-- | Error set version of 'Control.Monad.Except.liftEither'.
+liftMembers ::
+  (MonadError (OneOf e2) m, ConvertErrors e1 e2)
+  => Either (OneOf e1) a
+  -> m a
+liftMembers (Left e) = throwError (convertErrors e)
+liftMembers (Right a) = pure a
 
 -- | Handle one of the errors in set es.
 class MonadHandle es t where
