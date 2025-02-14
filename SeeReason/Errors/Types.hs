@@ -22,8 +22,8 @@ module SeeReason.Errors.Types
   , throwMember
   , Get1(get1), Remove(remove)
   , Member
-  , FindError(findError)
-  , throwJust
+  , findError
+  -- , throwJust
   , ConvertError(convertError)
   , liftMembers
   , MonadHandle(handleMember)
@@ -31,7 +31,6 @@ module SeeReason.Errors.Types
 
 import Control.Exception (SomeException)
 import Control.Monad.Except (ExceptT, lift, MonadError, MonadTrans,  runExceptT, throwError)
---import Data.Type.Bool
 import Data.Word (Word8)
 import Data.SafeCopy
 import qualified Data.Serialize as S (Serialize(get, put), getWord8, Put, PutM, Get)
@@ -169,20 +168,20 @@ type Member e es = (Put1 e es, Get1 e es, Remove e es)
 
 -- | Look at a SomeException and see if it can be turned into an error
 -- of type es.  This is being used in cases where es is a OneOf.
-class FindError es m where
-  findError :: MonadError es m => (SomeException -> m a) -> SomeException -> m a
+findError ::
+  forall es m a.
+  (ConvertError SomeException (Either SomeException (OneOf es)),
+   MonadError (OneOf es) m)
+  => (SomeException -> m a)
+  -> SomeException -> m a
+findError rethrow se =
+  either rethrow throwError (convertError se :: Either SomeException (OneOf es))
 
+{-
 -- | No members to find, just rethrow.
 instance FindError (OneOf '[]) h where
   findError rethrow e = rethrow e
-
--- | Helper function for building FindError instances:
---     findError rethrow e =
---       throwJust (fromException e :: Maybe ErrorCall) $
---       throwJust (fromException e :: Maybe IOException) $
---       rethrow e
-throwJust :: (Put1 e es, MonadError (OneOf es) m) => Maybe e -> m a -> m a
-throwJust this next = maybe next throwMember this
+-}
 
 -- | Convert between OneOf error types, assuming that the @OneOf es@
 -- is capable of representing the error that the @OneOf es'@ argument
@@ -193,11 +192,11 @@ class ConvertError old new where
   convertError :: old -> new
 
 -- | Simple case
-instance ConvertError (OneOf es') (OneOf '[]) where
-  convertError _ = Empty
+instance ConvertError e (Either e (OneOf '[])) where
+  convertError = Left
 
-instance ConvertError (OneOf es) (OneOf es) where
-  convertError es = es
+instance ConvertError e e where
+  convertError e = e
 
 -- | Error set version of 'Control.Monad.Except.liftEither'.
 liftMembers ::
