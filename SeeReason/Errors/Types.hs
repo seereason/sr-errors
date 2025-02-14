@@ -190,18 +190,18 @@ throwJust this next = maybe next throwMember this
 -- but I haven't managed it.  Therefore I write custom instances as
 -- needed.
 class ConvertError old new where
-  convertError :: OneOf old -> OneOf new
+  convertError :: old -> new
 
 -- | Simple case
-instance ConvertError es' '[] where
+instance ConvertError (OneOf es') (OneOf '[]) where
   convertError _ = Empty
 
-instance ConvertError es es where
+instance ConvertError (OneOf es) (OneOf es) where
   convertError es = es
 
 -- | Error set version of 'Control.Monad.Except.liftEither'.
 liftMembers ::
-  (MonadError (OneOf e2) m, ConvertError e1 e2)
+  (MonadError (OneOf e2) m, ConvertError (OneOf e1) (OneOf e2))
   => Either (OneOf e1) a
   -> m a
 liftMembers (Left e) = throwError (convertError e)
@@ -213,7 +213,7 @@ class MonadHandle es t where
     forall e t' a m. (MonadTrans t',
                       Monad m,
                       Put1 e es, Get1 e es, Remove e es,
-                      ConvertError es (Delete e es),
+                      ConvertError (OneOf es) (OneOf (Delete e es)),
                       MonadError (OneOf es) (t m),
                       MonadError (OneOf (Delete e es)) (t' m))
     => t m a -> t' m (Either e a)
