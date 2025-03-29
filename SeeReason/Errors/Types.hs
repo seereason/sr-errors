@@ -23,19 +23,24 @@ module SeeReason.Errors.Types
   , Get1(get1), Remove(remove)
   , Member
   , findError
+  , findError'
   -- , throwJust
   , ConvertError(convertError)
   , liftMembers
   , MonadHandle(handleMember)
+  , fromIO, fromM, fromMWith
+  , isAsyncException
   ) where
 
-import Control.Exception (SomeException)
-import Control.Monad.Except (ExceptT, lift, MonadError, MonadTrans,  runExceptT, throwError)
+import Control.Exception (Exception, fromException, SomeAsyncException(SomeAsyncException), SomeException, throwIO, toException)
+import Control.Monad.Catch (MonadCatch, throwM, try)
+import Control.Monad.Except (ExceptT, lift, liftIO, MonadError, MonadIO, MonadTrans,  runExceptT, throwError)
 import Data.Word (Word8)
 import Data.SafeCopy
 import qualified Data.Serialize as S (Serialize(get, put), getWord8, Put, PutM, Get)
 import Data.Typeable (Typeable, typeOf)
 import Data.Proxy
+import GHC.Stack (callStack, HasCallStack)
 import SeeReason.Errors.Sort
   (Delete, MemberTest(Found), MemberP)
 
@@ -177,6 +182,16 @@ findError ::
 findError rethrow se =
   either rethrow throwError (convertError se :: Either SomeException (OneOf es))
 
+-- | Like 'findError', but requires all 'SomeException' to be
+-- converted into @OneOf es@.
+findError' ::
+  forall es m a.
+  (ConvertError SomeException (OneOf es),
+   MonadError (OneOf es) m)
+  => SomeException -> m a
+findError' se =
+  throwError (convertError se :: (OneOf es))
+
 {-
 -- | No members to find, just rethrow.
 instance FindError (OneOf '[]) h where
@@ -195,7 +210,9 @@ class ConvertError old new where
 instance ConvertError e (Either e (OneOf '[])) where
   convertError = Left
 
-instance ConvertError e e where
+-- | We want this instance to be used whenever it matches, it is the
+-- simplest.
+instance {-# INCOHERENT #-} ConvertError e e where
   convertError e = e
 
 -- | Error set version of 'Control.Monad.Except.liftEither'.
@@ -222,3 +239,51 @@ instance MonadHandle es (ExceptT (OneOf es)) where
     lift (runExceptT action) >>= \case
       Left es -> maybe (throwError (convertError es)) (pure . Left) (get1 es)
       Right a -> pure (Right a)
+
+-- | Like 'liftIO' but catches any synchronous exceptions known to the
+-- ConvertError instance and returns them via MonadError.
+fromIO ::
+  forall e m a.
+  (MonadIO m,
+   MonadCatch m,
+   MonadError e m,
+   ConvertError SomeException (Either SomeException e),
+   HasCallStack)
+  => IO a -> m a
+fromIO = fromM . liftIO
+
+-- | Like 'liftIO' but catches any synchronous exceptions known to the
+-- ConvertError instance and returns them via MonadError.
+fromM ::
+  forall e m a.
+  (MonadIO m,
+   MonadCatch m,
+   MonadError e m,
+   ConvertError SomeException (Either SomeException e),
+   HasCallStack)
+  => m a -> m a
+fromM io =
+  fromMWith (\se -> either throwM throwError (convertError se :: Either SomeException e)) io
+
+-- | Like liftIO, but catches any (synchronous) 'SomeException' and
+-- passes it to @f@.
+fromMWith ::
+  forall m a.
+  (MonadIO m,
+   MonadCatch m,
+   HasCallStack)
+  => (SomeException -> m a) -> m a -> m a
+fromMWith f m =
+  try m >>= \case
+    Left se | isAsyncException se -> liftIO (throwIO se)
+    Left se -> f se
+    Right a -> pure a
+  where _ = callStack
+
+-- | From "Myths and Truth in Haskell Asynchronous Exceptions" -
+-- https://kazu-yamamoto.hatenablog.jp/entry/2024/12/04/180338
+isAsyncException :: Exception e => e -> Bool
+isAsyncException e =
+  case fromException (toException e) of
+    Just (SomeAsyncException _) -> True
+    Nothing -> False
