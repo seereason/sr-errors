@@ -125,7 +125,7 @@ instance (SafeCopy e, S.Serialize e, Typeable e,  S.Serialize (OneOf s), Typeabl
 -- * Put1
 
 class (MemberP e es ~ 'Found) => Put1 e es where
-  put1 :: e -> OneOf es
+  put1 :: HasCallStack => e -> OneOf es
 
 instance {-# OVERLAPS #-} Put1 e (e ': xs) where
   put1 e = Val e
@@ -139,7 +139,7 @@ throwMember = throwError . put1
 -- * Get1
 
 class (MemberP e es ~ 'Found) => Get1 e es where
-  get1 :: OneOf es -> Maybe e
+  get1 :: HasCallStack => OneOf es -> Maybe e
 
 instance {-# OVERLAPS #-} Get1 e (e ': xs) where
   get1 (Val e) = Just e
