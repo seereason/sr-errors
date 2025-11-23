@@ -13,11 +13,13 @@ module SeeReason.Errors.Handle
   , liftMemberT
   , liftMember
   , catchMember
+  , modifyMember
   , tryMember
   ) where
 
 import Control.Monad.Except
 import Control.Lens (Prism', prism')
+import Data.Proxy (Proxy(Proxy))
 import GHC.Stack (HasCallStack)
 import SeeReason.Errors.Types
 
@@ -42,6 +44,7 @@ tryError action = (Right <$> action) `catchError` (pure . Left)
 handleError :: (MonadError e m, HasCallStack) => (e -> m a) -> m a -> m a
 handleError = flip catchError
 
+#if 0
 catchMember ::
   forall e (es :: [*]) m a. (MonadError (OneOf es) (m :: * -> *), Get1 e es, HasCallStack)
   => m a
@@ -60,3 +63,34 @@ handleMember = flip catchMember
 
 tryMember :: forall e es m a. (MonadError (OneOf es) m, Get1 e es, HasCallStack) => m a -> m (Either e a)
 tryMember action = (Right <$> action) `catchMember` (pure . Left)
+#else
+catchMember ::
+  forall e (es :: [*]) m a. (MonadError (OneOf es) (m :: * -> *), Member e es, HasCallStack)
+  => m a
+  -> (Proxy es -> e -> m a)
+  -> m a
+catchMember action handle =
+  catchError action handleOneOf
+  where
+    handleOneOf :: OneOf es -> m a
+    handleOneOf es = maybe (throwError es) (handle (Proxy @es)) (get1 es)
+
+modifyMember ::
+  forall e (es :: [*]) m a. (MonadError (OneOf es) (m :: * -> *), Member e es, HasCallStack)
+  => m a
+  -> (Proxy es -> e -> e)
+  -> m a
+modifyMember action f =
+  catchError action handleOneOf
+  where
+    handleOneOf :: OneOf es -> m a
+    handleOneOf es = maybe (throwError es) (\e -> throwMember (f (Proxy @es) e)) (get1 es)
+
+handleMember ::
+  forall e es m a. (MonadError (OneOf es) m, Member e es, HasCallStack)
+  => (Proxy es -> e -> m a) -> m a -> m a
+handleMember = flip catchMember
+
+tryMember :: forall e es m a. (MonadError (OneOf es) m, Member e es, HasCallStack) => m a -> m (Either e a)
+tryMember action = (Right <$> action) `catchMember` (\(Proxy :: Proxy es) e -> pure (Left e))
+#endif
