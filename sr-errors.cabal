@@ -13,6 +13,7 @@ Tested-With: GHC==8.6.5
 
 Library
   default-language: Haskell2010
+  Default-Extensions: StarIsType
   GHC-Options: -Wall -Wredundant-constraints
   Build-Depends:
     base >= 4.9 && < 5, cereal, exceptions, lens, mtl, safecopy >= 0.10.4, unexceptionalio-trans

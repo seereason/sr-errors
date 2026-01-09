@@ -4,19 +4,19 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, base, cereal, lens, safecopy, stdenv
-      , unexceptionalio-trans
+  f = { mkDerivation, base, cereal, exceptions, lens, lib, mtl
+      , safecopy, unexceptionalio-trans
       }:
       mkDerivation {
         pname = "sr-errors";
-        version = "1.0.0";
+        version = "1.19";
         src = ./.;
         libraryHaskellDepends = [
-          base cereal lens safecopy unexceptionalio-trans
+          base cereal exceptions lens mtl safecopy unexceptionalio-trans
         ];
         homepage = "https://github.com/seereason/sr-errors";
         description = "Error set types";
-        license = stdenv.lib.licenses.bsd3;
+        license = lib.licenses.bsd3;
       };
 
   haskellPackages = if compiler == "default"

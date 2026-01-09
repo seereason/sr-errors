@@ -19,7 +19,7 @@ module SeeReason.Errors.Handle
   , tryMember
   ) where
 
-import Control.Monad.Except
+import Control.Monad.Except hiding (handleError, mapError, tryError)
 import Control.Lens (Prism', prism')
 import Data.Proxy (Proxy(Proxy))
 import GHC.Stack (callStack, HasCallStack)

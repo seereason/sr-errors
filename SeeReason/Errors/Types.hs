@@ -34,7 +34,8 @@ module SeeReason.Errors.Types
 
 import Control.Exception (Exception, fromException, SomeAsyncException(SomeAsyncException), SomeException, throwIO, toException)
 import Control.Monad.Catch (MonadCatch, throwM, try)
-import Control.Monad.Except (ExceptT, lift, liftIO, MonadError, MonadIO, MonadTrans,  runExceptT, throwError)
+import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
+import Control.Monad.Trans (MonadIO(..), MonadTrans(..))
 import Data.Word (Word8)
 import Data.SafeCopy
 import qualified Data.Serialize as S (Serialize(get, put), getWord8, Put, PutM, Get)
