@@ -1,0 +1,331 @@
+;; -*- mode: emacs-lisp; lexical-binding:t; coding: utf-8-emacs; -*-
+;; --------------------------------------------------------------------------
+;; Desktop File for Emacs
+;; --------------------------------------------------------------------------
+;; Created Sun Mar  1 11:51:35 2026
+;; Desktop file format version 208
+;; Emacs version 30.2
+
+;; Global section:
+(setq desktop-saved-frameset [frameset 1 (27044 39111 479936 346000) (desktop . "208") "beshers@cb" nil nil ((((minibuffer . t) (undecorated) (override-redirect) (font . "-DAMA-Ubuntu Mono-regular-normal-normal-*-48-*-*-*-m-0-iso10646-1") (border-width . 0) (internal-border-width . 1) (child-frame-border-width) (right-divider-width . 0) (bottom-divider-width . 0) (vertical-scroll-bars . left) (horizontal-scroll-bars) (foreground-color . "black") (background-color . "white") (mouse-color . "black") (border-color . "black") (screen-gamma) (line-spacing) (left-fringe . 8) (right-fringe . 8) (no-special-glyphs) (scroll-bar-foreground) (scroll-bar-background) (menu-bar-lines . 1) (tab-bar-lines . 0) (tool-bar-lines . 0) (title) (wait-for-wm . t) (tool-bar-position . top) (inhibit-double-buffering) (icon-type . t) (auto-raise) (auto-lower) (cursor-type . box) (scroll-bar-width . 16) (scroll-bar-height . 16) (alpha) (alpha-background) (no-focus-on-map) (no-accept-focus) (fullscreen . maximized) (visibility . t) (use-frame-synchronization) (skip-taskbar) (z-group) (sticky) (shaded) (display-type . color) (background-mode . light) (cursor-color . "black") (font-parameter) (environment) (modeline . t) (unsplittable) (frameset--id . "7BD2-0616-E427-15B7") (frameset--mini t . t) (display . ":0") (dnd-root-window-position) (last-focus-update . t) (height . 25) (width . 105) (left . 0) (top . 58) (icon-name) (explicit-name)) ((min-height . 4) (min-width . 10) (min-height-ignore . 2) (min-width-ignore . 4) (min-height-safe . 1) (min-width-safe . 2) (min-pixel-height . 196) (min-pixel-width . 240) (min-pixel-height-ignore . 98) (min-pixel-width-ignore . 96) (min-pixel-height-safe . 49) (min-pixel-width-safe . 48)) leaf (pixel-width . 2558) (pixel-height . 1215) (total-width . 107) (total-height . 25) (normal-height . 1.0) (normal-width . 1.0) (buffer "claudeFlake" (selected . t) (hscroll . 0) (fringes 8 8 nil nil) (margins nil) (scroll-bars nil 1 t nil 0 t nil) (vscroll . 0) (dedicated) (point . 208) (start . 1)) (prev-buffers ("*shell*" 147338 148555) ("*Buffer List*" 1 567) ("Simple2.hs" 1 41) ("simple-lib2" 1 279) ("simple2.cabal" 1 226))))])
+(setq desktop-missing-file-warning nil)
+(setq tags-file-name nil)
+(setq tags-table-list nil)
+(setq search-ring '(#("build" 0 5 (isearch-case-fold-search t isearch-regexp-function nil)) #("/nix/store/c" 0 12 (isearch-case-fold-search t isearch-regexp-function nil)) #("ssh -A" 0 6 (isearch-case-fold-search nil isearch-regexp-function nil))))
+(setq regexp-search-ring nil)
+(setq register-alist nil)
+(setq file-name-history '("/home/beshers/appraisalscribe-ghc912/claudeFlake" "~/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib2/" "~/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib2" "~/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib1/Simple1.hs" "~/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib1/" "~/appraisalscribe-ghc912/cbgit/flake-simple/simple-app/simple.cabal" "~/appraisalscribe-ghc912/cbgit/flake-simple/simple1.cabal" "~/appraisalscribe-ghc912/cbgit/flake-simple/simple2.cabal" "~/appraisalscribe-ghc912/cbgit/flake-simple/simple1.cabal" "~/appraisalscribe-ghc912/cbgit/flake-simple/simple.cabal" "~/appraisalscribe-ghc912/cbgit/flake-simple/" "~/appraisalscribe-ghc912/cbgit/flake-simple/Main.hs" "~/cbgit/clientserver/" "~/cbgit/clientserver/Client.hs" "~/cbgit/clientserver/cs.cabal" "~/appraisalscribe-ghc912/claudeFlake/GenFlake.hs" "~/appraisalscribe-ghc912/claudeFlake/" "~/appraisalscribe-ghc912/claudeFlake/README.md" "~/appraisalscribe-ghc912/claudeFlake/flake-gen.hs" "~/Downloads/" "~/appraisalscribe-ghc912/claudeFlake/GenFlake.hs" "~/appraisalscribe-ghc912/claudeFlake/" "~/appraisalscribe-ghc912/claudeFlake/README.md" "~/appraisalscribe-ghc912/claudeFlake/flake.nix" "~/appraisalscribe-ghc912/claudeFlake/flake-haskell-nix.nix" "~/appraisalscribe-ghc912/" "~/appraisalscribe-ghc912/git/sr-utils/flake.nix" "~/appraisalscribe-ghc912/git/sr-errors/flake.lock" "~/appraisalscribe-ghc912/git/sr-utils/flake.nix" "~/appraisalscribe-ghc912/git/sr-errors/flake.nix"))
+
+;; Buffer section -- buffers listed in same order as in buffer list:
+(desktop-create-buffer 208
+  nil
+  "claudeFlake"
+  'dired-mode
+  '(font-lock-mode)
+  208
+  '(nil nil)
+  t
+  '("/home/beshers/appraisalscribe-ghc912/claudeFlake/")
+  '((buffer-display-time 27044 39076 34544 434000))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/Main.hs"
+  "Main.hs"
+  'haskell-mode
+  '(font-lock-mode interactive-haskell-mode haskell-indentation-mode)
+  94
+  '(114 nil)
+  nil
+  nil
+  '((tab-width . 8) (indent-tabs-mode) (buffer-display-time 27044 38038 63008 12000) (buffer-file-coding-system . utf-8-unix))
+  '((mark-ring (94 94 94 94 35 20 20 20 20 20))))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib2/Simple2.hs"
+  "Simple2.hs"
+  'haskell-mode
+  '(font-lock-mode interactive-haskell-mode haskell-indentation-mode)
+  41
+  '(nil nil)
+  nil
+  nil
+  '((tab-width . 8) (indent-tabs-mode) (buffer-display-time 27044 38013 10597 469000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  nil
+  "simple-lib2"
+  'dired-mode
+  '(font-lock-mode)
+  279
+  '(nil nil)
+  t
+  '("/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib2/")
+  '((buffer-display-time 27044 38010 315351 301000))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib2/simple2.cabal"
+  "simple2.cabal"
+  'haskell-cabal-mode
+  '(font-lock-mode)
+  226
+  '(nil nil)
+  nil
+  nil
+  '((indent-tabs-mode) (buffer-display-time 27044 38010 148740 770000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib1/Simple1.hs"
+  "Simple1.hs"
+  'haskell-mode
+  '(font-lock-mode interactive-haskell-mode haskell-indentation-mode)
+  61
+  '(nil nil)
+  nil
+  nil
+  '((tab-width . 8) (indent-tabs-mode) (buffer-display-time 27044 38010 148740 291000) (buffer-file-coding-system . utf-8-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib1/simple1.cabal"
+  "simple1.cabal"
+  'haskell-cabal-mode
+  '(font-lock-mode)
+  319
+  '(nil nil)
+  nil
+  nil
+  '((indent-tabs-mode) (buffer-display-time 27044 37901 423107 173000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  nil
+  "simple-lib1"
+  'dired-mode
+  '(font-lock-mode)
+  218
+  '(nil nil)
+  t
+  '("/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/simple-lib1/")
+  '((buffer-display-time 27044 37874 403186 460000))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/simple-app/simple.cabal"
+  "simple.cabal"
+  'haskell-cabal-mode
+  '(font-lock-mode)
+  361
+  '(nil nil)
+  nil
+  nil
+  '((indent-tabs-mode) (buffer-display-time 27044 37854 266189 921000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/simple1.cabal"
+  "simple1.cabal"
+  'haskell-cabal-mode
+  '(font-lock-mode)
+  262
+  '(25 nil)
+  nil
+  nil
+  '((indent-tabs-mode) (buffer-display-time 27044 37255 648932 134000) (buffer-file-coding-system . utf-8-unix) (overwrite-mode))
+  '((mark-ring (1 142 1 1 1 1 1 1 1 1 1))))
+
+(desktop-create-buffer 208
+  nil
+  "flake-simple"
+  'dired-mode
+  '(font-lock-mode)
+  373
+  '(nil nil)
+  t
+  '("/home/beshers/appraisalscribe-ghc912/cbgit/flake-simple/")
+  '((buffer-display-time 27044 33945 661184 666000))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/cbgit/clientserver/DOM.hs"
+  "DOM.hs"
+  'haskell-mode
+  '(font-lock-mode interactive-haskell-mode haskell-indentation-mode)
+  9683
+  '(nil nil)
+  nil
+  nil
+  '((tab-width . 8) (indent-tabs-mode) (buffer-display-time 27044 33945 661184 291000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  nil
+  "clientserver"
+  'dired-mode
+  '(font-lock-mode)
+  538
+  '(nil nil)
+  t
+  '("/home/beshers/cbgit/clientserver/")
+  '((buffer-display-time 27040 48826 331799 990000))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/cbgit/clientserver/ClientMain.hs"
+  "ClientMain.hs"
+  'haskell-mode
+  '(font-lock-mode interactive-haskell-mode haskell-indentation-mode)
+  371
+  '(nil nil)
+  nil
+  nil
+  '((tab-width . 8) (indent-tabs-mode) (buffer-display-time 27040 48826 32966 146000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/cbgit/clientserver/Client.hs"
+  "Client.hs"
+  'haskell-mode
+  '(font-lock-mode interactive-haskell-mode haskell-indentation-mode)
+  86
+  '(nil nil)
+  nil
+  nil
+  '((tab-width . 8) (indent-tabs-mode) (buffer-display-time 27040 48792 472215 91000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/cbgit/clientserver/cs.cabal"
+  "cs.cabal"
+  'haskell-cabal-mode
+  '(font-lock-mode)
+  466
+  '(nil nil)
+  nil
+  nil
+  '((indent-tabs-mode) (buffer-display-time 27040 48777 818928 15000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/claudeFlake/GenFlake.hs"
+  "GenFlake.hs"
+  'haskell-mode
+  '(font-lock-mode interactive-haskell-mode haskell-indentation-mode)
+  2007
+  '(1 nil)
+  nil
+  nil
+  '((tab-width . 8) (indent-tabs-mode) (buffer-display-time 27040 43676 272831 55000) (buffer-file-coding-system . utf-8-unix))
+  '((mark-ring (1 1 1 1 1 1))))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/claudeFlake/README.md"
+  "README.md"
+  'fundamental-mode
+  '(font-lock-mode)
+  41
+  '(1 nil)
+  nil
+  nil
+  '((buffer-display-time 27040 43030 90158 216000) (buffer-file-coding-system . utf-8-unix))
+  '((mark-ring (1 1))))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/claudeFlake/flake-gen.hs"
+  "flake-gen.hs"
+  'haskell-mode
+  '(font-lock-mode interactive-haskell-mode haskell-indentation-mode)
+  1
+  '(8900 nil)
+  nil
+  nil
+  '((tab-width . 8) (indent-tabs-mode) (buffer-display-time 27040 43013 678530 688000) (buffer-file-coding-system . utf-8-unix))
+  '((mark-ring (1))))
+
+(desktop-create-buffer 208
+  nil
+  "Downloads"
+  'dired-mode
+  '(text-scale-mode font-lock-mode)
+  140
+  '(3030 nil)
+  t
+  '("/home/beshers/Downloads/")
+  '((buffer-display-time 27040 43159 519183 617000))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/git/sr-errors/flake.lock"
+  "flake.lock"
+  'fundamental-mode
+  '(font-lock-mode)
+  270
+  '(230 nil)
+  nil
+  nil
+  '((buffer-display-time 27040 41786 293013 663000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/claudeFlake/flake.nix"
+  "flake.nix"
+  'nix-mode
+  '(font-lock-mode)
+  218
+  '(3928 nil)
+  nil
+  nil
+  '((tab-width . 2) (indent-tabs-mode) (buffer-display-time 27040 41738 889788 359000) (buffer-file-coding-system . utf-8-unix))
+  '((mark-ring (1 1 1))))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/claudeFlake/flake-haskell-nix.nix"
+  "flake-haskell-nix.nix"
+  'nix-mode
+  '(font-lock-mode)
+  3151
+  '(nil nil)
+  nil
+  nil
+  '((tab-width . 2) (indent-tabs-mode) (buffer-display-time 27040 41036 602287 31000) (buffer-file-coding-system . utf-8-unix))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  nil
+  "appraisalscribe-ghc912"
+  'dired-mode
+  '(font-lock-mode)
+  199
+  '(nil nil)
+  t
+  '("/home/beshers/appraisalscribe-ghc912/")
+  '((buffer-display-time 27039 58585 818437 810000))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/git/sr-utils/flake.nix"
+  "flake.nix"
+  'nix-mode
+  '(font-lock-mode)
+  312
+  '(59 nil)
+  nil
+  nil
+  '((tab-width . 2) (indent-tabs-mode) (buffer-display-time 27040 41778 667803 8000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring (1454 60))))
+
+(desktop-create-buffer 208
+  "/home/beshers/appraisalscribe-ghc912/git/sr-errors/flake.nix"
+  "flake.nix"
+  'nix-mode
+  '(font-lock-mode)
+  100
+  '(60 nil)
+  nil
+  nil
+  '((tab-width . 2) (indent-tabs-mode) (buffer-display-time 27039 58401 646675 826000) (buffer-file-coding-system . undecided-unix))
+  '((mark-ring nil)))
+

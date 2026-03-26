@@ -1,6 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs";
+    nixpkgs.url = "github:nixos/nixpkgs?rev=9e2e8a7878573d312db421d69e071690ec34e98c";
+    # "github:NixOS/nixpkgs?rev=5ca374dcc743a89261c266c993c5d66775fae109";
     userid.url = "github:seereason/userid";
   };
   outputs = { self, nixpkgs, userid }:
