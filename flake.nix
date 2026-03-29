@@ -1,39 +1,60 @@
 {
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?rev=9e2e8a7878573d312db421d69e071690ec34e98c";
-    # "github:NixOS/nixpkgs?rev=5ca374dcc743a89261c266c993c5d66775fae109";
-    userid.url = "github:seereason/userid";
-  };
-  outputs = { self, nixpkgs, userid }:
-    let
-      system = "x86_64-linux";
-      overlay = final: prev: {
-        sr-errors = final.callCabal2nix "sr-errors" ./. { };
-        userid = userid;
-      };
-      pkgs = nixpkgs.legacyPackages.${system};
-      version="ghc9122";
-    in with pkgs;
-      let ghcPackages = haskell.packages.${version};
-          ghcjsPackages = pkgsCross.ghcjs.haskell.packages.${version};
-          myGHCPackages = ghcPackages.extend overlay;
-          myGHCJSPackages = ghcjsPackages.extend overlay;
-      in
-        {
-          packages.${system}.default = myGHCPackages.sr-errors;
-          devShells.${system}.default = with pkgs;
-            mkShell
-              {
-                packages = [ (ghcPackages.ghcWithPackages (p: (with p; [mtl happstack-server])))
-                             cabal-install cabal2nix
-                             (ghcjsPackages.ghcWithPackages (p: with p; [ghcjs-dom mtl]))
-                           ];
-                shellHook = ''
-            alias ghcjs=javascript-unknown-ghcjs-ghc
-            alias ghcjs-pkg=javascript-unknown-ghcjs-ghc-pkg
-        '';
-                
-              };
+  description = "sr-errors";
 
+  inputs = {
+    sr-pkgs.url   = "git+ssh://git@github.com/cliffordbeshers/cbgit?dir=nix-config/sr-flake/sr-nixpkgs&ref=main";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, sr-pkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        nixpkgs = sr-pkgs.inputs.nixpkgs;
+        pkgs    = import nixpkgs { inherit system; };
+        hpkgs = pkgs.haskellPackages;
+
+        # ── GHC options ────────────────────────────────────────────────
+        # Add / remove flags here. They are threaded through via
+        # `configureFlags` so they apply to every cabal invocation.
+        ghcOptions = [
+          "-Wall"
+          "-Wunused-imports"
+          "-ddump-minimal-imports"  # uncomment to inspect Core
+          # "-O2"          # uncomment for benchmarks
+        ];
+
+        # ── Package definition ─────────────────────────────────────────
+        sr-errors = hpkgs.callCabal2nix "sr-errors" ./. {
+          # extra Haskell deps not in the .cabal file go here, e.g.:
+          # some-dep = hpkgs.some-dep;
         };
+
+        # Apply GHC options via `overrideCabal`
+        sr-errors-dev = pkgs.haskell.lib.overrideCabal sr-errors (old: {
+          configureFlags = (old.configureFlags or [])
+            ++ map (o: "--ghc-option=${o}") ghcOptions;
+        });
+
+      in {
+        # `nix build` → release build (no extra flags)
+        packages.default = sr-errors;
+
+        # `nix build .#dev` → build with the GHC options above
+        packages.dev = sr-errors-dev;
+
+        # `nix develop` → drop into a shell with cabal + GHC available
+        devShells.default = hpkgs.shellFor {
+          packages = _: [ sr-errors ];
+          buildInputs = with pkgs; [
+            hpkgs.cabal-install
+            hpkgs.haskell-language-server
+            hpkgs.hlint
+          ];
+          # GHC options visible to cabal inside the shell
+          shellHook = ''
+            export CABAL_CONFIG=/dev/null   # avoid $HOME pollution
+            echo "GHC: $(ghc --version)"
+          '';
+        };
+      });
 }
