@@ -2,16 +2,16 @@
   description = "sr-errors";
 
   inputs = {
-    sr-pkgs.url   = "git+ssh://git@github.com/cliffordbeshers/cbgit?dir=nix-config/sr-flake/sr-nixpkgs&ref=main";
+    sr-pkgs.url   = "git+ssh://git@github.com/seereason/sr-flake?dir=sr-nixpkgs&ref=main";
+    sr-libs.url   = "git+ssh://git@github.com/seereason/sr-flake?dir=sr-libs&ref=main";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs = { self, sr-pkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        nixpkgs = sr-pkgs.inputs.nixpkgs;
-        pkgs    = import nixpkgs { inherit system; };
-        hpkgs = pkgs.haskellPackages;
+        pkgs  = import sr-pkgs.inputs.nixpkgs { inherit system; };
+        hpkgs = pkgs.haskellPackages.extend (sr-libs.srOverlay pkgs);
 
         # ── GHC options ────────────────────────────────────────────────
         # Add / remove flags here. They are threaded through via
