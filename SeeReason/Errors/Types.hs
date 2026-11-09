@@ -59,8 +59,6 @@ data OneOf (n :: [k]) where
   Val   :: e -> OneOf (e ': s) -- ^ One element of type e
   NoVal :: OneOf s -> OneOf (e ': s) -- ^ One element of some in s
 
-deriving instance Typeable k => Typeable (OneOf (n :: [k]))
-
 instance Show (OneOf '[]) where
   show Empty = "{}"
 
@@ -114,7 +112,7 @@ instance Typeable k => SafeCopy (OneOf ('[] :: [k])) where
   putCopy = contain . S.put
   errorTypeName _ = "()"
 
-instance (SafeCopy e, S.Serialize e, Typeable e,  S.Serialize (OneOf s), Typeable s) => SafeCopy (OneOf (e ': s)) where
+instance (S.Serialize e, Typeable e,  S.Serialize (OneOf s), Typeable s) => SafeCopy (OneOf (e ': s)) where
   version = 1
   kind = base
   getCopy :: Contained (S.Get (OneOf (e ': s)))
